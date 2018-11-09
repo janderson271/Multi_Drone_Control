@@ -40,7 +40,7 @@ def sim():
 
 class Controller: 
 
-	def __init__(self, drone,ts = 0.1, x0=None):
+	def __init__(self, drone,ts = 0.1, x0=zeros((12,1))):
 
 		self.ts = ts
 
@@ -49,25 +49,26 @@ class Controller:
 		w = drone.width
 		m = drone.mass
 		J = drone.inertia
+		self.x0 = x0
 
 		# drone dynamics
 		self.nx = 12
-		A = np.zeros((nx,nx))
+		A = np.zeros((12,12))
 		A[0:3,3:6] = np.eye(3)
 		A[3,7] = g
 		A[4,6] = -g
 		A[6:9,9:12] = np.eye(3)
 		self.A = ts*A
-		#
 
 		self.nu = 4
 		k = 1
 		B[5,:] = 1/m*np.array([1,1,1,1])
 		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[-k,k,-k,k]])
-		self.B = B
-		# MUST ADD GRAVITATION TO DYNAMICS CONSTRAINTS
+		self.B = ts*B
 
-		self.x0 = x0
+		Bd = zeros((12,1))
+		Bd[5] = -g
+		self.Bd = ts*Bd
 
 		# Quadratic Cost Function
 		self.xbar = np.zeros((self.nx, 1))
@@ -90,12 +91,9 @@ class Controller:
 		self.Af = np.identity(self.nx)
 
 	def calc_opt_actuation(self):
-
 		return solve_cftoc_YALMIP(self)
 
 	def solve_cftoc_YALMIP(self):
-		xbar = np.zeros((2,1))
-		ubar = np.zeros((1,1))
 
 		eng = matlab.engine.start_matlab()
 		eng.addpath(r'~/Documents/MATLAB/YALMIP-master',nargout=0)
@@ -106,10 +104,23 @@ class Controller:
 		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/@sdpvar',nargout=0)
 		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/solvers',nargout=0)
 
-		return eng.solve_cftoc(matlab.double(self.A.tolist()), matlab.double(self.B.tolist()), matlab.double(self.P.tolist()), matlab.double(self.Q.tolist()), matlab.double(self.R.tolist()),\
-		 matlab.double(self.n.tolist()), matlab.double(self.x0.tolist()), matlab.double(xbar.tolist()), matlab.double(ubar.tolist()), \
-		 matlab.double(self.xL.tolist()), matlab.double(self.xU.tolist()), matlab.double(self.uL.tolist()), matlab.double(self.uU.tolist()), matlab.double(self.bf.tolist()), matlab.double(self.Af.tolist()))
-
+		return eng.solve_cftoc_YALMIP( matlab.double(self.A.tolist()), \
+							   matlab.double(self.B.tolist()), \
+							   matlab.double(self.Bd.tolist()), \
+							   matlab.double(self.P.tolist()), \
+							   matlab.double(self.Q.tolist()), \
+							   matlab.double(self.R.tolist()), \
+ 							   matlab.double(self.n.tolist()), \
+ 							   matlab.double(self.xbar.tolist()), \
+ 							   matlab.double(self.ubar.tolist()), \
+ 							   matlab.double(self.x0.tolist()), \
+ 							   matlab.double(self.xL.tolist()), \
+ 							   matlab.double(self.xU.tolist()), \
+ 							   matlab.double(self.uL.tolist()), \
+ 							   matlab.double(self.uU.tolist()), \
+ 							   matlab.double(self.bf.tolist()), \
+ 							   matlab.double(self.Af.tolist()))
+		
 	def solve_cftoc_CVXPY(self):
 
 		X = cvx.Variable((self.nx,self.n + 1))
