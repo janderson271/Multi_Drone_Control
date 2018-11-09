@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import numpy as np
+
 import cvxpy as cvx
+import picos as pic
+import matlab.engine
+
+
 import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray
@@ -86,11 +91,26 @@ class Controller:
 
 	def calc_opt_actuation(self):
 
-		return None
+		return solve_cftoc_YALMIP(self)
 
-	def solve_cftoc(self):
+	def solve_cftoc_YALMIP(self):
+		xbar = np.zeros((2,1))
+		ubar = np.zeros((1,1))
 
-		return None
+		eng = matlab.engine.start_matlab()
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/demos',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/extras',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/modules',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/operators',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/@sdpvar',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/solvers',nargout=0)
+
+		return eng.solve_cftoc(matlab.double(self.A.tolist()), matlab.double(self.B.tolist()), matlab.double(self.P.tolist()), matlab.double(self.Q.tolist()), matlab.double(self.R.tolist()),\
+		 matlab.double(self.n.tolist()), matlab.double(self.x0.tolist()), matlab.double(xbar.tolist()), matlab.double(ubar.tolist()), \
+		 matlab.double(self.xL.tolist()), matlab.double(self.xU.tolist()), matlab.double(self.uL.tolist()), matlab.double(self.uU.tolist()), matlab.double(self.bf.tolist()), matlab.double(self.Af.tolist()))
+
+	def solve_cftoc_CVXPY(self):
 
 		X = cvx.Variable((self.nx,self.n + 1))
 		U = cvx.Variable((self.nu,self.n))
@@ -100,12 +120,10 @@ class Controller:
 					     cvx.trace(				  U.T*self.R*U               )     ) 
 
 		constraints = []
-
-		# Dynamic Constraintss
+		# Dynamic Constraints
 		constraints += [X[:,0] == self.x0]
-
-		#for k in range(0,self.n-1):
-			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k] ]
+		for k in range(0,self.n-1):
+			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k]]	
 
 		# State Constraints
 		for k in range(1,self.n):
@@ -122,8 +140,46 @@ class Controller:
 		problem = cvx.Problem(J,constraints)
 		solution = problem.solve()
 
-		return U[:,0]
+		return U[:,0].value
 
+	def solve_cftoc_PICOS(self):
+		problem = pic.Problem()
+
+		X = problem.add_variable('X',(self.nx,self.n+1))
+		U = problem.add_variable('U',(self.nu,self.n))
+
+		# Objective Function
+		#print(X[:,self.n].T*self.P*X[:,self.n])
+		objective = X[:,self.n].T*self.P*X[:,self.n]
+		for k in range(self.n):
+			objective += X[:,k].T*self.Q*X[:,k]
+			objective += U[:,k].T*self.R*U[:,k]
+		problem.set_objective('min',objective)
+
+		# Dynamic Constraints
+		problem.add_constraint(X[:,0] == self.x0)
+		for k in range(0,self.n-1):
+			problem.add_constraint(X[:,k+1] == self.A*X[:,k] + self.B*U[:,k])	
+
+		# State Constraints
+		for k in range(1,self.n):
+			for i in range(self.nx):
+				problem.add_constraint(X[i,k] > self.xL[i])
+				problem.add_constraint(X[i,k] < self.xU[i])
+
+		# Input Constraints
+		for k in range(0,self.n-1):
+			for i in range(self.nu):
+				problem.add_constraint(U[i,k] > self.uL)
+				problem.add_constraint(U[i,k] < self.uU)
+
+		# Terminal Constraint
+		problem.add_constraint(self.Af*X[:,self.n] < self.bf)
+
+		# Solve Program
+		problem.solve()
+
+		return U[:,0].value
 
 	# def sim_step(self):
 		"""
