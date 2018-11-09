@@ -10,16 +10,10 @@ import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray
 
-def sim():
+def actuate():
+
 	rospy.init_node("controller")
 	node_name = rospy.get_name()
-
-	# pos_pub = rospy.Publisher(node_name + "/position", Pose, queue_size=1)
-	# vel_pub = rospy.Publisher(node_name + "/velocity", Twist, queue_size=1)
-	# drone = Drone()
-	# control_sub = rospy.Subscriber(node_name + "/control", Float32MultiArray, drone.control_callback)
-	# control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.control_callback)
-	# rate = rospy.Rate(1/drone.dt)
 
 	control_pub = rospy.Publisher(node_name + "/control", Float32MultiArray, queue_size = 1)
 	controller = controller()
@@ -27,16 +21,10 @@ def sim():
 	rate = rospy.Rate(1/controller.dt)
 
 	while not rospy.is_shutdown():
-		#on fixed timestip: simulate the system and publish
-		
-		# position, velocity = drone.sim_step()
-		# pos_pub.publish(position)
-		# vel_pub.publish(velocity)
 
 		uOpt = controller.calc_opt_actuation()
-		control_pub.publish()
+		control_pub.publish(uOpt)
 		rate.sleep()
-
 
 class Controller: 
 
@@ -58,17 +46,17 @@ class Controller:
 		A[3,7] = g
 		A[4,6] = -g
 		A[6:9,9:12] = np.eye(3)
-		self.A = ts*A
+		self.A = np.eye(12) + ts*A # ZOH discretization
 
 		self.nu = 4
 		k = 1
 		B[5,:] = 1/m*np.array([1,1,1,1])
 		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[-k,k,-k,k]])
-		self.B = ts*B
+		self.B = ts*B # ZOH discretization
 
 		Bd = zeros((12,1))
 		Bd[5] = -g
-		self.Bd = ts*Bd
+		self.Bd = ts*Bd # ZOH discretization
 
 		# Quadratic Cost Function
 		self.xbar = np.zeros((self.nx, 1))
@@ -120,7 +108,7 @@ class Controller:
  							   matlab.double(self.uU.tolist()), \
  							   matlab.double(self.bf.tolist()), \
  							   matlab.double(self.Af.tolist()))
-		
+
 	def solve_cftoc_CVXPY(self):
 
 		X = cvx.Variable((self.nx,self.n + 1))
@@ -191,17 +179,6 @@ class Controller:
 		problem.solve()
 
 		return U[:,0].value
-
-	# def sim_step(self):
-		"""
-		self.u = self.nux1 np array [FL, FR, RL, RR]
-		self.F_ext = 3x1 np array [x component, y component, z component]
-		update self.x (self.nxx1 state vector)
-		use euler angles
-		sets the internal state and returns pose and twist for the drone
-		""" 
-		#TODO: set self.x = f(x,u,F_ext)
-		#return Pose(), Twist()
 
 	def state_callback(self,state_msg):
 		self.x0 = np.array(state_msg.data)
