@@ -121,21 +121,18 @@ class Controller:
 
 		constraints = []
 		# Dynamic Constraints
-		import ipdb; ipdb.set_trace()
-		constraints += [X[:,0] == self.x0]
-		for k in range(0,self.n-1):
+		for k in range(0,self.n):
 			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k]]	
 
 		# State Constraints
+		constraints += [X[:,0] == self.x0] # Initial Constraint
 		for k in range(1,self.n):
 			constraints += [self.xL <= X[:,k], X[:,k] <= self.xU]
+		constraints += [self.Af*X[:,self.n] <= self.bf] # Terminal Constraint
 
 		# Input Constraints
-		for k in range(0,self.n-1):
+		for k in range(0,self.n):
 			constraints += [self.uL <= U[:,k], U[:,k] <= self.uU]
-
-		# Terminal Constraint
-		constraints += [self.Af*X[:,self.n] <= self.bf]
 
 		# Solve Program
 		problem = cvx.Problem(cvx.Minimize(J),constraints)
