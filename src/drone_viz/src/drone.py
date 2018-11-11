@@ -20,19 +20,18 @@ def make_pub(drone):
 
 def drone_viz():
 	rospy.init_node("viz")
-	nodes = rosnode.get_node_names()
 	drones = []
-	for node in nodes:
-		#new_drone = is_new_drone(topic, drones)
-		if node.startswith("/drone"):
-			drones.append(node[1:])
 	position_dict = {}
 	pub_dict = {}
-	for drone in drones:
-		rospy.Subscriber(drone + "/position", Pose, callback, (drone, position_dict))
 	rate = rospy.Rate(10)
 	while not rospy.is_shutdown():
 		#on fixed timestip: simulate the system and publish
+		nodes = rosnode.get_node_names()
+		for node in nodes:
+			node = node[1:]
+			if node.startswith("drone") and node not in drones:
+				drones.append(node)
+				rospy.Subscriber("/" + node + "/position", Pose, callback, (node, position_dict))
 		for drone in drones:
 			if drone not in position_dict: continue
 			marker = Marker()
