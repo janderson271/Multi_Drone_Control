@@ -43,7 +43,12 @@ class Drone:
 		sets the internal state and returns pose and twist for the drone
 		""" 
 		#TODO: set self.x = f(x,u,F_ext)
-		return Pose(), Twist()
+		self.x[0] += 0.02
+		self.x[1] += 0.02
+		a = Pose()
+		a.position.x = self.x[0]
+		a.position.y = self.x[1]
+		return a, Twist()
 
 	def control_callback(self,control_msg):
 		self.u = np.array(control_msg.data)
