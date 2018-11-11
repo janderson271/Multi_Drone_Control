@@ -26,7 +26,7 @@ class Test():
 		self.R    = np.array([[1]])
 		
 		# Horizon
-		self.n = 25
+		self.n = 4
 
 		# state constraints
 		self.xL = np.array([-15,-15])
@@ -106,7 +106,7 @@ class Test():
 		 							   matlab.double(self.bf.reshape((2*self.nx,1)).tolist()),   \
 		 							   matlab.double(self.Af.tolist()))	
 
-	def use_modeling_tool(self,A, B, N, Q, R, P, x0, umax=None, umin=None, xmin=None, xmax=None):
+	def solve_cftoc_OS(self,A, B, N, Q, R, P, x0, umax=None, umin=None, xmin=None, xmax=None):
 	    """
 	    solve MPC with modeling tool for test
 	    """
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 	u_YALMIP = test.solve_cftoc_YALMIP()
    	print(u_YALMIP)	
 
-   	u_OS = test.use_modeling_tool(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
+   	u_OS = test.solve_cftoc_OS(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
    									umax=test.uU[0], umin=test.uL[0], \
    									xmin=test.xL[0], xmax=test.xU[0])
    	print(u_OS)

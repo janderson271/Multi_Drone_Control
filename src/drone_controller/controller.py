@@ -81,34 +81,6 @@ class Controller:
 	def calc_opt_actuation(self):
 		return solve_cftoc_CVXPY(self)
 
-	def solve_cftoc_YALMIP(self):
-
-		eng = matlab.engine.start_matlab()
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/demos',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/extras',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/modules',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/operators',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/@sdpvar',nargout=0)
-		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/solvers',nargout=0)
-
-		return eng.solve_cftoc_YALMIP( matlab.double(self.A.tolist()), \
-							   matlab.double(self.B.tolist()), \
-							   matlab.double(self.Bd.tolist()), \
-							   matlab.double(self.P.tolist()), \
-							   matlab.double(self.Q.tolist()), \
-							   matlab.double(self.R.tolist()), \
- 							   matlab.double(self.n.tolist()), \
- 							   matlab.double(self.xbar.tolist()), \
- 							   matlab.double(self.ubar.tolist()), \
- 							   matlab.double(self.x0.tolist()), \
- 							   matlab.double(self.xL.tolist()), \
- 							   matlab.double(self.xU.tolist()), \
- 							   matlab.double(self.uL.tolist()), \
- 							   matlab.double(self.uU.tolist()), \
- 							   matlab.double(self.bf.tolist()), \
- 							   matlab.double(self.Af.tolist()))
-
 	def solve_cftoc_CVXPY(self):
 
 		X = cvx.Variable((self.nx,self.n + 1))
@@ -139,6 +111,78 @@ class Controller:
 		solution = problem.solve()
 
 		return U[:,0].value
+
+	def solve_cftoc_YALMIP(self):
+		eng = matlab.engine.start_matlab()
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/demos',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/extras',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/modules',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/operators',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/@sdpvar',nargout=0)
+		eng.addpath(r'~/Documents/MATLAB/YALMIP-master/solvers',nargout=0)
+
+		return eng.solve_cftoc_YALMIP( matlab.double(self.A.tolist()),                         \
+									   matlab.double(self.B.reshape((self.nx,1)).tolist()),    \
+									   matlab.double(self.Bd.reshape((self.nx,1)).tolist()),   \
+									   matlab.double(self.P.tolist()),   					   \
+									   matlab.double(self.Q.tolist()),                         \
+									   matlab.double(self.R.tolist()),                         \
+		 							   matlab.double(np.array([self.n]).tolist()),           \
+		 							   matlab.double(self.xbar.reshape((self.nx,1)).tolist()), \
+		 							   matlab.double(self.ubar.reshape((self.nu,1)).tolist()), \
+		 							   matlab.double(self.x0.reshape((self.nx,1)).tolist()),   \
+		 							   matlab.double(self.xL.reshape((self.nx,1)).tolist()),   \
+		 							   matlab.double(self.xU.reshape((self.nx,1)).tolist()),   \
+		 							   matlab.double(self.uL.reshape((self.nu,1)).tolist()),   \
+		 							   matlab.double(self.uU.reshape((self.nu,1)).tolist()),   \
+		 							   matlab.double(self.bf.reshape((2*self.nx,1)).tolist()),   \
+		 							   matlab.double(self.Af.tolist()))	
+
+	def solve_cftoc_OS(self,A, B, N, Q, R, P, x0, umax=None, umin=None, xmin=None, xmax=None):
+	    """
+	    solve MPC with modeling tool for test
+	    """
+	    import cvxpy as cvxpy
+
+	    (nx, nu) = B.shape
+	    B = B.flatten()
+
+	    # mpc calculation
+	    x = cvxpy.Variable((nx, N + 1))
+	    u = cvxpy.Variable((nu, N))
+
+	    costlist = 0.0
+	    constrlist = []
+
+	    for t in range(N):
+	        costlist += 0.5 * cvxpy.quad_form(x[:, t], Q)
+	        costlist += 0.5 * cvxpy.quad_form(u[:, t], R)
+
+	        constrlist += [x[:, t + 1] == A * x[:, t] + B * u[:, t]]
+
+	        if xmin is not None:
+	            constrlist += [x[:, t] >= xmin]
+	        if xmax is not None:
+	            constrlist += [x[:, t] <= xmax]
+
+	    costlist += 0.5 * cvxpy.quad_form(x[:, N], P)  # terminal cost
+	    if xmin is not None:
+	        constrlist += [x[:, N] >= xmin]
+	    if xmax is not None:
+	        constrlist += [x[:, N] <= xmax]
+
+	    #import ipdb; ipdb.set_trace()
+	    constrlist += [x[:, 0] == x0]  # inital state constraints
+	    if umax is not None:
+	        constrlist += [u <= umax]  # input constraints
+	    if umin is not None:
+	        constrlist += [u >= umin]  # input constraints
+
+	    prob = cvxpy.Problem(cvxpy.Minimize(costlist), constrlist)
+	    prob.solve(verbose=False)
+
+	    return u[:,0].value
 
 	def pos_callback(self,pos_msg):
 		self.x0 = np.array(pos_msg.data)
