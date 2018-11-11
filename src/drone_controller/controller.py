@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
-
 import cvxpy as cvx
-import picos as pic
-import matlab.engine
-
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
@@ -13,22 +10,25 @@ from std_msgs.msg import Float32MultiArray
 def actuate():
 
 	rospy.init_node("controller")
+	drone_name = rospy.get_param("drone")
 	node_name = rospy.get_name()
 
-	control_pub = rospy.Publisher(node_name + "/control", Float32MultiArray, queue_size = 1)
-	controller = controller()
-	pos_sub = rospy.Subscriber(node_name + "/state", Pose, controller.state_callback)
-	rate = rospy.Rate(1/controller.dt)
+	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
+	controller = Controller()
+	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, controller.pos_callback)
+	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, controller.vel_callback)
+	rate = rospy.Rate(10)
 
 	while not rospy.is_shutdown():
-
 		uOpt = controller.calc_opt_actuation()
 		control_pub.publish(uOpt)
 		rate.sleep()
 
 class Controller: 
 
-	def __init__(self, drone,ts = 0.1, x0=zeros((12,1))):
+	def __init__(self, drone,ts = 0.1, x0=np.zeros((12,1))):
+
+		self.drone = drone
 
 		self.ts = ts
 
@@ -79,7 +79,7 @@ class Controller:
 		self.Af = np.identity(self.nx)
 
 	def calc_opt_actuation(self):
-		return solve_cftoc_YALMIP(self)
+		return solve_cftoc_CVXPY(self)
 
 	def solve_cftoc_YALMIP(self):
 
@@ -114,12 +114,14 @@ class Controller:
 		X = cvx.Variable((self.nx,self.n + 1))
 		U = cvx.Variable((self.nu,self.n))
 
-		J = cvx.Minimize(               X[:,self.n].T*self.P*X[:,self.n]       + \
-					     cvx.trace( X[:,0:self.n-1].T*self.Q*X[:,0:self.n-1] ) + \
-					     cvx.trace(				  U.T*self.R*U               )     ) 
+		# Cost function
+		J = cvx.quad_form(X[:,self.n],self.P)
+		for k in range(self.n):
+			J += cvx.quad_form(X[:,k],self.Q) + cvx.quad_form(U[:,k],self.R)
 
 		constraints = []
 		# Dynamic Constraints
+		import ipdb; ipdb.set_trace()
 		constraints += [X[:,0] == self.x0]
 		for k in range(0,self.n-1):
 			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k]]	
@@ -136,52 +138,16 @@ class Controller:
 		constraints += [self.Af*X[:,self.n] <= self.bf]
 
 		# Solve Program
-		problem = cvx.Problem(J,constraints)
+		problem = cvx.Problem(cvx.Minimize(J),constraints)
 		solution = problem.solve()
 
 		return U[:,0].value
 
-	def solve_cftoc_PICOS(self):
-		problem = pic.Problem()
+	def pos_callback(self,pos_msg):
+		self.x0 = np.array(pos_msg.data)
 
-		X = problem.add_variable('X',(self.nx,self.n+1))
-		U = problem.add_variable('U',(self.nu,self.n))
-
-		# Objective Function
-		#print(X[:,self.n].T*self.P*X[:,self.n])
-		objective = X[:,self.n].T*self.P*X[:,self.n]
-		for k in range(self.n):
-			objective += X[:,k].T*self.Q*X[:,k]
-			objective += U[:,k].T*self.R*U[:,k]
-		problem.set_objective('min',objective)
-
-		# Dynamic Constraints
-		problem.add_constraint(X[:,0] == self.x0)
-		for k in range(0,self.n-1):
-			problem.add_constraint(X[:,k+1] == self.A*X[:,k] + self.B*U[:,k])	
-
-		# State Constraints
-		for k in range(1,self.n):
-			for i in range(self.nx):
-				problem.add_constraint(X[i,k] > self.xL[i])
-				problem.add_constraint(X[i,k] < self.xU[i])
-
-		# Input Constraints
-		for k in range(0,self.n-1):
-			for i in range(self.nu):
-				problem.add_constraint(U[i,k] > self.uL)
-				problem.add_constraint(U[i,k] < self.uU)
-
-		# Terminal Constraint
-		problem.add_constraint(self.Af*X[:,self.n] < self.bf)
-
-		# Solve Program
-		problem.solve()
-
-		return U[:,0].value
-
-	def state_callback(self,state_msg):
-		self.x0 = np.array(state_msg.data)
+	def vel_callback(self,vel_msg):
+		self.x0 = np.array(vel_msg.data)
 
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
