@@ -21,8 +21,9 @@ def actuate():
 	control_input = Float32MultiArray()
 	while not rospy.is_shutdown():
 		uOpt = controller.calc_opt_actuation()
+		print('uOpt = ' + str(uOpt))
 		control_input.data = uOpt
-		control_pub.publish(uOpt)
+		control_pub.publish(control_input)
 		rate.sleep()
 
 class Controller: 
@@ -99,8 +100,7 @@ class Controller:
 			J += cvx.quad_form(X[:,k]-self.xbar,self.Q) + cvx.quad_form(U[:,k]-self.ubar,self.R)
 
 		constraints = []
-		# Dynamic Constraints
-		import ipdb; ipdb.set_trace()		
+		# Dynamic Constraints		
 		for k in range(0,self.n):
 			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k] + self.Bd]	
 
