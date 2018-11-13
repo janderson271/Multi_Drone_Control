@@ -71,12 +71,14 @@ class Controller:
 		self.n = 10
 
 		# state constraints
-		self.xL = np.zeros((self.nx,1)).flatten()
-		self.xU = np.zeros((self.nx,1)).flatten()
-		self.uL = np.zeros((self.nu,1)).flatten()
-		self.uU = np.zeros((self.nu,1)).flatten()
+		m = 100
+		self.xL = -m*np.ones(12).flatten()
+		self.xU =  m*np.ones(12).flatten()
+		self.uL = -m*np.ones( 4).flatten()
+		self.uU =  m*np.ones( 4).flatten()
 
 		# terminal constraints
+		# Ax==b
 		xf = np.zeros((12,1))
 		self.bf = np.vstack((xf,-xf)).flatten()
 		self.Af = np.vstack((np.eye(12),-np.eye(12)))

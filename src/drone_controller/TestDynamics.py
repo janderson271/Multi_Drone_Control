@@ -94,8 +94,8 @@ class Test():
 
 		# Solve Program
 		problem = cvx.Problem(cvx.Minimize(J),constraints)
-		solution = problem.solve(verbose=1)
-		
+		solution = problem.solve()
+
 		return U[:,0].value
 
 	def solve_cftoc_YALMIP(self):
@@ -179,8 +179,8 @@ if __name__ == "__main__":
 	u_YALMIP = test.solve_cftoc_YALMIP()
    	print(u_YALMIP)	
 
-   	u_OS = test.solve_cftoc_OS(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
-   									umax=test.uU[0], umin=test.uL[0], \
-   									xmin=test.xL[0], xmax=test.xU[0])
-   	print(u_OS)
+   	#u_OS = test.solve_cftoc_OS(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
+   	#								umax=test.uU[0], umin=test.uL[0], \
+   	#								xmin=test.xL[0], xmax=test.xU[0])
+   	#print(u_OS)
 
