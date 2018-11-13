@@ -39,7 +39,7 @@ class Controller:
 		J = np.diag([inertia_xx, inertia_yy, inertia_zz])
 
 		# drone dynamics
-		self.x0 = x0
+		self.x0 = x0.flatten()
 		g = 9.81
 
 		self.nx = 12
@@ -193,12 +193,12 @@ class Controller:
 	    return u[:,0].value
 
 	def pos_callback(self,pos_msg):
-		self.x0[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z]).reshape(3,1)
-		self.x0[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, pos_msg.orientation.y, pos_msg.orientation.z, pos_msg.orientation.w])).reshape(3,1)
+		self.x0[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z]).reshape(3,)
+		self.x0[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, pos_msg.orientation.y, pos_msg.orientation.z, pos_msg.orientation.w])).reshape(3,)
 
 	def vel_callback(self,vel_msg):
-		self.x0[3:6] = np.array([vel_msg.linear.x, vel_msg.linear.y, vel_msg.linear.z]).reshape(3,1)
-		self.x0[9:] = np.array([vel_msg.angular.x, vel_msg.angular.y, vel_msg.angular.z]).reshape(3,1)
+		self.x0[3:6] = np.array([vel_msg.linear.x, vel_msg.linear.y, vel_msg.linear.z]).reshape(3,)
+		self.x0[9:12] = np.array([vel_msg.angular.x, vel_msg.angular.y, vel_msg.angular.z]).reshape(3,)
 
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
