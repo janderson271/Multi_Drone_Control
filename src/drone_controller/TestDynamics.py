@@ -1,44 +1,24 @@
-#!/usr/bin/env python
+# test script for CVXPY 
+
 import numpy as np
 import cvxpy as cvx
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import matlab.engine
 
-import rospy
-from geometry_msgs.msg import Pose, Twist, Wrench
-from std_msgs.msg import Float32MultiArray
+class Test():
 
-def actuate():
+	def __init__(self):
 
-	rospy.init_node("controller")
-	node_name = rospy.get_name()
-	drone_name = rospy.get_param(node_name + "/drone")
-
-	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
-	controller = Controller()
-	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, controller.pos_callback)
-	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, controller.vel_callback)
-	rate = rospy.Rate(10)
-	control_input = Float32MultiArray()
-	while not rospy.is_shutdown():
-		uOpt = controller.calc_opt_actuation()
-		control_input.data = uOpt
-		control_pub.publish(uOpt)
-		rate.sleep()
-
-class Controller: 
-
-	def __init__(self, ts = 0.1, x0=np.zeros((12,1)), length=0.5, width=0.5, mass=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3):
-
-		self.ts = ts
+		self.ts = 0.1
+		ts = 0.1
 
 		# drone characteristics
-		l = length
-		w = width
-		m = mass
-		J = np.diag([inertia_xx, inertia_yy, inertia_zz])
+		l = 1
+		w = 1
+		m = 1
+		J = np.diag([0.45,0.45,0.7])
 
 		# drone dynamics
-		self.x0 = x0
+		self.x0 = np.zeros((12,1)).flatten()
 		g = 9.81
 
 		self.nx = 12
@@ -71,18 +51,21 @@ class Controller:
 		self.n = 10
 
 		# state constraints
-		self.xL = np.zeros((self.nx,1)).flatten()
-		self.xU = np.zeros((self.nx,1)).flatten()
-		self.uL = np.zeros((self.nu,1)).flatten()
-		self.uU = np.zeros((self.nu,1)).flatten()
+		m = 100
+		self.xL = -m*np.ones(12).flatten()
+		self.xU =  m*np.ones(12).flatten()
+		self.uL = -m*np.ones( 4).flatten()
+		self.uU =  m*np.ones( 4).flatten()
 
 		# terminal constraints
+		self.bf = np.zeros((self.nx,1))
+		self.Af = np.identity(self.nx)
+
+		# Ax==b
 		xf = np.zeros((12,1))
 		self.bf = np.vstack((xf,-xf)).flatten()
 		self.Af = np.vstack((np.eye(12),-np.eye(12)))
 
-	def calc_opt_actuation(self):
-		return self.solve_cftoc_CVXPY()
 
 	def solve_cftoc_CVXPY(self):
 
@@ -96,9 +79,8 @@ class Controller:
 
 		constraints = []
 		# Dynamic Constraints
-		import ipdb; ipdb.set_trace()		
 		for k in range(0,self.n):
-			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k] + self.Bd]	
+			constraints += [X[:,k+1] == self.A*X[:,k] + self.B*U[:,k] +self.Bd]	
 
 		# State Constraints
 		constraints += [X[:,0] == self.x0] # Initial Constraint
@@ -112,8 +94,8 @@ class Controller:
 
 		# Solve Program
 		problem = cvx.Problem(cvx.Minimize(J),constraints)
-		solution = problem.solve()
-
+		solution = problem.solve(verbose=1)
+		
 		return U[:,0].value
 
 	def solve_cftoc_YALMIP(self):
@@ -188,21 +170,17 @@ class Controller:
 
 	    return u[:,0].value
 
-	def pos_callback(self,pos_msg):
-		self.x0[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z]).reshape(3,1)
-		self.x0[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, pos_msg.orientation.y, pos_msg.orientation.z, pos_msg.orientation.w])).reshape(3,1)
-
-	def vel_callback(self,vel_msg):
-		self.x0[3:6] = np.array([vel_msg.linear.x, vel_msg.linear.y, vel_msg.linear.z]).reshape(3,1)
-		self.x0[9:] = np.array([vel_msg.angular.x, vel_msg.angular.y, vel_msg.angular.z]).reshape(3,1)
-
-	def external_callback(self,external_msg):
-		self.Fext = self.vectornp(external_msg.force)
-
-        def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
-
 if __name__ == "__main__":
-    try:
-		actuate()
-    except rospy.ROSInterruptException:
-		pass
+	test = Test()
+
+	u_CVXPY = test.solve_cftoc_CVXPY()
+	print(u_CVXPY)	
+
+	u_YALMIP = test.solve_cftoc_YALMIP()
+   	print(u_YALMIP)	
+
+   	u_OS = test.solve_cftoc_OS(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
+   									umax=test.uU[0], umin=test.uL[0], \
+   									xmin=test.xL[0], xmax=test.xU[0])
+   	print(u_OS)
+
