@@ -1,85 +1,52 @@
-#!/usr/bin/env python
+# test script for CVXPY 
+
 import numpy as np
 import cvxpy as cvx
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import matlab.engine
 
-import rospy
-from geometry_msgs.msg import Pose, Twist, Wrench
-from std_msgs.msg import Float32MultiArray
+class Test():
 
-def actuate():
+	def __init__(self):
 
-	rospy.init_node("controller")
-	drone_name = rospy.get_param("drone")
-	node_name = rospy.get_name()
+		self.ts = 0.1
+		self.x0 = np.array([[2],[-1]]).flatten()
 
-	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
-	controller = Controller()
-	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, controller.pos_callback)
-	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, controller.vel_callback)
-	rate = rospy.Rate(10)
-
-	while not rospy.is_shutdown():
-		uOpt = controller.calc_opt_actuation()
-		control_pub.publish(uOpt)
-		rate.sleep()
-
-class Controller: 
-
-	def __init__(self, drone,ts = 0.1, x0=np.zeros((12,1))):
-
-		self.drone = drone
-
-		self.ts = ts
-
-		# drone characteristics
-		l = drone.length
-		w = drone.width
-		m = drone.mass
-		J = drone.inertia
-		self.x0 = x0
-
-		# drone dynamics
-		self.nx = 12
-		A = np.zeros((12,12))
-		A[0:3,3:6] = np.eye(3)
-		A[3,7] = g
-		A[4,6] = -g
-		A[6:9,9:12] = np.eye(3)
-		self.A = np.eye(12) + ts*A # ZOH discretization
-
-		self.nu = 4
-		k = 1
-		B[5,:] = 1/m*np.array([1,1,1,1])
-		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[-k,k,-k,k]])
-		self.B = ts*B # ZOH discretization
-
-		Bd = zeros((12,1))
-		Bd[5] = -g
-		self.Bd = ts*Bd # ZOH discretization
+		#dynamics
+		self.nx = 2
+		self.nu = 1
+		self.A = np.array([[1.2,1],[0,1]])
+		self.B = np.array([[0],[1]]).flatten()
+		self.Bd = np.zeros((2,1)).flatten()
 
 		# Quadratic Cost Function
-		self.xbar = np.zeros((self.nx, 1))
-		self.P    = np.zeros((self.nx,self.nx))
-		self.Q    = np.zeros((self.nx,self.nx))
-		self.ubar = np.zeros((self.nu,1))
-		self.R    = np.zeros((self.nu,self.nu))
+		self.xbar = np.array([[0],[0]])
+		self.P    = np.zeros((2,2))
+		self.Q    = np.eye(2)
+		self.ubar = np.array([[0]])
+		self.R    = np.array([[1]])
 		
 		# Horizon
-		self.n = 10
+		self.n = 4
 
 		# state constraints
-		self.xL = np.zeros((self.nx,1))
-		self.xU = np.zeros((self.nx,1))
-		self.uL = np.zeros((self.nu,1))
-		self.uU = np.zeros((self.nx,1))
+		self.xL = np.array([-15,-15])
+		self.xU = np.array([15,15])
+		self.uL = np.array([-1])
+		self.uU = np.array([1])
 
-		# terminal constraints
-		self.bf = np.zeros((self.nx,1))
-		self.Af = np.identity(self.nx)
+		# Ax<=b
+		#self.bf = np.zeros((2*self.nx,1)).flatten()
+		#self.Af = np.array([[1,0],[0,1],[1,0],[0,1]])
 
-	def calc_opt_actuation(self):
-		return solve_cftoc_CVXPY(self)
+		# Ax==b
+		self.bf = np.zeros((2*self.nx,1)).flatten()
+		self.Af = np.array([[1,0],[0,1],[-1,0],[0,-1]])
+
+		# no constraint
+		#self.bf = np.zeros((2*self.nx,1)).flatten()
+		#self.Af = np.zeros((4,2))
+
+
 
 	def solve_cftoc_CVXPY(self):
 
@@ -184,19 +151,17 @@ class Controller:
 
 	    return u[:,0].value
 
-	def pos_callback(self,pos_msg):
-		self.x0 = np.array(pos_msg.data)
-
-	def vel_callback(self,vel_msg):
-		self.x0 = np.array(vel_msg.data)
-
-	def external_callback(self,external_msg):
-		self.Fext = self.vectornp(external_msg.force)
-
-        def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
-
 if __name__ == "__main__":
-    try:
-		sim()
-    except rospy.ROSInterruptException:
-		pass
+	test = Test()
+
+	u_CVXPY = test.solve_cftoc_CVXPY()
+	print(u_CVXPY)	
+
+	u_YALMIP = test.solve_cftoc_YALMIP()
+   	print(u_YALMIP)	
+
+   	u_OS = test.solve_cftoc_OS(test.A, test.B.reshape((test.nx,test.nu)), test.n, test.Q, test.R, test.P, test.x0, \
+   									umax=test.uU[0], umin=test.uL[0], \
+   									xmin=test.xL[0], xmax=test.xU[0])
+   	print(u_OS)
+
