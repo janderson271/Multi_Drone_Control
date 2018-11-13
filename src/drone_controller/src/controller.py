@@ -21,7 +21,7 @@ def actuate():
 	control_input = Float32MultiArray()
 	while not rospy.is_shutdown():
 		uOpt = controller.calc_opt_actuation()
-		print('uOpt = ' + str(uOpt))
+		#print('uOpt = ' + str(uOpt))
 		control_input.data = uOpt
 		control_pub.publish(control_input)
 		rate.sleep()

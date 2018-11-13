@@ -23,7 +23,8 @@ def sim():
 
 	while not rospy.is_shutdown():
 		#on fixed timestip: simulate the system and publish
-		if position.position.x >= 0 and np.sum(drone.u) > 0:
+		ipdb.set_trace()
+		if position.position.z >= 0 or np.sum(drone.u) > 0:
 			position, velocity = drone.sim_step()
 		pos_pub.publish(position)
 		vel_pub.publish(velocity)
@@ -59,7 +60,9 @@ class Drone:
 		g = 9.81
 		Fg = np.array([[0], [0], [-self.mass * g]])
 		Ft = np.array([[0], [0], [np.sum(self.u)]])
-		Fs = Fg + self.Fext + self.toGlobal(Ft).reshape(3,1)
+		
+		Fs = Fg + self.Fext + self.toGlobal(Ft).reshape(3,1) 
+		
 
 		Mz = np.array([0,0, self.k * (self.u[0] - self.u[1] + self.u[2] - self.u[3])]) 
 		Sfl = self.width * np.array([1, 1 ,0])
@@ -123,18 +126,22 @@ class Drone:
 		wx = self.x[3] # roll
 		wy = self.x[4] # pitch
 		wz = self.x[5] # yaw
-		R = inverse_matrix(euler_matrix(wx, wy, wz))
-		quat = quaternion_from_euler(wx, wy, wz)
-		return np.array(euler_from_quaternion(np.dot(R, quat)))
+		Rx = np.array([[1, 0, 0],[0, np.cos(wx), -np.sin(wx)],[0, np.sin(wx), np.cos(wx)]])
+		Ry = np.array([[np.cos(wy), 0, np.sin(wy)],[0, 1, 0],[-np.sin(wy), 0, np.cos(wy)]])
+		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])
+		R = np.linalg.inv(np.dot(Rx, np.dot(Ry,Rz)))
+		return np.dot(R, vector)
 
 
 	def toGlobal(self, vector):
 		wx = self.x[3] # roll
 		wy = self.x[4] # pitch
 		wz = self.x[5] # yaw
-		R = euler_matrix(wx, wy, wz)
-		quat = quaternion_from_euler(wx, wy, wz)
-		return np.array(euler_from_quaternion(np.dot(R, quat)))
+		Rx = np.array([[1, 0, 0],[0, np.cos(wx), -np.sin(wx)],[0, np.sin(wx), np.cos(wx)]])
+		Ry = np.array([[np.cos(wy), 0, np.sin(wy)],[0, 1, 0],[-np.sin(wy), 0, np.cos(wy)]])
+		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])
+		R = np.dot(Rx, np.dot(Ry,Rz))
+		return np.dot(R, vector)
 
 
 
