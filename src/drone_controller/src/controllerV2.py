@@ -21,7 +21,7 @@ def actuate():
 	control_input = Float32MultiArray()
 	while not rospy.is_shutdown():
 		uOpt = controller.calc_opt_actuation()
-		#print('uOpt = ' + str(uOpt))
+		print('uOpt = ' + str(uOpt))
 		control_input.data = uOpt
 		control_pub.publish(control_input)
 		rate.sleep()
@@ -65,7 +65,7 @@ class Controller:
 		# Quadratic Cost Function
 		self.xbar = np.zeros((self.nx, 1)).flatten()
 		self.xbar[2] = 1
-		self.P    = np.zeros((self.nx,self.nx))
+		self.P    = 10*np.zeros((self.nx,self.nx))
 		self.Q    = 10*np.eye(self.nx)
 		self.ubar = np.zeros((self.nu,1)).flatten()
 		self.R    = np.eye(self.nu)
@@ -111,7 +111,7 @@ class Controller:
 		self.constraints += [self.X[:,0] == self.x0] # Initial Constraint
 		for k in range(1,self.n):
 			self.constraints += [self.xL <= self.X[:,k], self.X[:,k] <= self.xU]
-		self.constraints += [self.Af*self.X[:,self.n] <= self.bf] # Terminal Constraint
+		#self.constraints += [self.Af*self.X[:,self.n] <= self.bf] # Terminal Constraint
 
 		# Input Constraints
 		for k in range(0,self.n):
