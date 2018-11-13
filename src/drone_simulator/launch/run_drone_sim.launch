@@ -1,4 +1,9 @@
 <launch>
-	<node pkg="drone_simulator" type="drone.py" name="drone_1" output="screen">
+	
+	<node pkg="drone_simulator" type="drone.py" name="drone_1" output="screen"/>
+
+	<node pkg="drone_controller" type="controller.py" name="controller_1">
+		<param name="drone" type="str" value="drone_1"/>
 	</node>
+	
 </launch>

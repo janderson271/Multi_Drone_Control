@@ -10,35 +10,34 @@ from std_msgs.msg import Float32MultiArray
 def actuate():
 
 	rospy.init_node("controller")
-	drone_name = rospy.get_param("drone")
 	node_name = rospy.get_name()
+	drone_name = rospy.get_param(node_name + "/drone")
 
 	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
 	controller = Controller()
 	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, controller.pos_callback)
 	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, controller.vel_callback)
 	rate = rospy.Rate(10)
-
+	control_input = Float32MultiArray()
 	while not rospy.is_shutdown():
 		uOpt = controller.calc_opt_actuation()
+		control_input.data = uOpt
 		control_pub.publish(uOpt)
 		rate.sleep()
 
 class Controller: 
 
-	def __init__(self, drone,ts = 0.1, x0=np.zeros((12,1))):
-
-		self.drone = drone
+	def __init__(self, ts = 0.1, x0=np.zeros((12,1)), length=0.5, width=0.5, mass=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3):
 
 		self.ts = ts
 
 		# drone characteristics
-		l = drone.length
-		w = drone.width
-		m = drone.mass
-		J = drone.inertia
+		l = length
+		w = width
+		m = mass
+		J = np.diag([inertia_xx, inertia_yy, inertia_zz])
 		self.x0 = x0
-
+		g = 9.81
 		# drone dynamics
 		self.nx = 12
 		A = np.zeros((12,12))
@@ -50,11 +49,12 @@ class Controller:
 
 		self.nu = 4
 		k = 1
+		B = np.zeros((12,4))
 		B[5,:] = 1/m*np.array([1,1,1,1])
 		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[-k,k,-k,k]])
 		self.B = ts*B # ZOH discretization
 
-		Bd = zeros((12,1))
+		Bd = np.zeros((12,1))
 		Bd[5] = -g
 		self.Bd = ts*Bd # ZOH discretization
 
@@ -79,7 +79,7 @@ class Controller:
 		self.Af = np.identity(self.nx)
 
 	def calc_opt_actuation(self):
-		return solve_cftoc_CVXPY(self)
+		return self.solve_cftoc_CVXPY()
 
 	def solve_cftoc_CVXPY(self):
 
@@ -185,10 +185,12 @@ class Controller:
 	    return u[:,0].value
 
 	def pos_callback(self,pos_msg):
-		self.x0 = np.array(pos_msg.data)
+		self.x0[0:4] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z]).reshape(3,1)
+		self.x0[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, pos_msg.orientation.y, pos_msg.orientation.z, pos_msg.orientation.w])).reshape(3,1)
 
 	def vel_callback(self,vel_msg):
-		self.x0 = np.array(vel_msg.data)
+		self.x0[3:6] = np.array([vel_msg.linear.x, vel_msg.linear.y, vel_msg.linear.z]).reshape(3,1)
+		self.x0[9:] = np.array([vel_msg.angular.x, vel_msg.angular.y, vel_msg.angular.z]).reshape(3,1)
 
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
@@ -197,6 +199,6 @@ class Controller:
 
 if __name__ == "__main__":
     try:
-		sim()
+		actuate()
     except rospy.ROSInterruptException:
 		pass
