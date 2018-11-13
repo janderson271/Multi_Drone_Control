@@ -41,11 +41,12 @@ class Test():
 		self.Bd = (ts*Bd).flatten() # ZOH discretization
 
 		# Quadratic Cost Function
-		self.xbar = np.zeros((self.nx, 1))
+		self.xbar = np.zeros((self.nx, 1)).flatten()
+		self.xbar[2] = 1
 		self.P    = np.zeros((self.nx,self.nx))
-		self.Q    = np.zeros((self.nx,self.nx))
-		self.ubar = np.zeros((self.nu,1))
-		self.R    = np.zeros((self.nu,self.nu))
+		self.Q    = np.eye(self.nx)
+		self.ubar = np.zeros((self.nu,1)).flatten()
+		self.R    = np.eye(self.nu)
 		
 		# Horizon
 		self.n = 10
@@ -54,7 +55,7 @@ class Test():
 		m = 100
 		self.xL = -m*np.ones(12).flatten()
 		self.xU =  m*np.ones(12).flatten()
-		self.uL = -m*np.ones( 4).flatten()
+		self.uL =  np.zeros((4,1)).flatten()
 		self.uU =  m*np.ones( 4).flatten()
 
 		# terminal constraints
@@ -63,6 +64,7 @@ class Test():
 
 		# Ax==b
 		xf = np.zeros((12,1))
+		xf[2] = 1
 		self.bf = np.vstack((xf,-xf)).flatten()
 		self.Af = np.vstack((np.eye(12),-np.eye(12)))
 
@@ -75,7 +77,7 @@ class Test():
 		# Cost function
 		J = cvx.quad_form(X[:,self.n],self.P)
 		for k in range(self.n):
-			J += cvx.quad_form(X[:,k],self.Q) + cvx.quad_form(U[:,k],self.R)
+			J += cvx.quad_form(X[:,k]-self.xbar,self.Q) + cvx.quad_form(U[:,k]-self.ubar,self.R)
 
 		constraints = []
 		# Dynamic Constraints
