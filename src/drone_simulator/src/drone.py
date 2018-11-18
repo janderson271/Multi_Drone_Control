@@ -6,13 +6,43 @@ from geometry_msgs.msg import Pose, Twist, Wrench
 from tf.transformations import euler_from_quaternion, quaternion_from_euler, euler_matrix, inverse_matrix
 from std_msgs.msg import Float32MultiArray
 
+def get_and_set_params(node_name, params):
+	# params is a dict from param_name -> default_value, None if no default value
+	vals = {}
+	for param, default in params.items():
+		if default is None:
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+		else:
+			if not rospy.has_param("{}/{}".format(node_name, param)):
+				rospy.set_param("{}/{}".format(node_name, param), default)
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+	return vals
+
+def clear_params(node_name, params):
+	for k in params:
+		try:
+			rospy.delete_param("{}/{}".format(node_name, k))
+		except KeyError:
+			print("value {} not set".format(k))
+	return True
+
 def sim():
 	rospy.init_node("drone")
 	node_name = rospy.get_name()
+	print(node_name)
 	pos_pub = rospy.Publisher(node_name + "/position", Pose, queue_size=1)
 	vel_pub = rospy.Publisher(node_name + "/velocity", Twist, queue_size=1)
 	
-	drone = Drone()
+	params_dict = dict(length=0.5, width=0.5, mass=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3, dt = 0.1, x0=[0.] * 12)
+	params = get_and_set_params(node_name, params_dict)
+	print(len(params["x0"]))
+	params["x0"] = np.array(params["x0"], dtype=np.float64).reshape((12, 1))
+	drone = Drone(**params)
+	if rospy.has_param("/{}/{}".format(node_name, "u_init")):
+		param = rospy.get_param("/{}/{}".format(node_name, "u_init"))
+		param = np.array(param).reshape((4, 1))
+		drone.u = param
+		print("setting initial u to ", drone.u)
 	
 	control_sub = rospy.Subscriber(node_name + "/control", Float32MultiArray, drone.control_callback)
 	control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.control_callback)
@@ -23,12 +53,12 @@ def sim():
 
 	while not rospy.is_shutdown():
 		#on fixed timestip: simulate the system and publish
-		ipdb.set_trace()
 		if position.position.z >= 0 or np.sum(drone.u) > 0:
 			position, velocity = drone.sim_step()
 		pos_pub.publish(position)
 		vel_pub.publish(velocity)
 		rate.sleep()
+	clear_params(node_name, params_dict)
 
 
 class Drone: 
