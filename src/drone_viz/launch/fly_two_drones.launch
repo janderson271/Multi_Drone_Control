@@ -1,5 +1,5 @@
 <launch>
-	<node name="drone_1" pkg="drone_simulator" type="drone.py">
+	<node name="drone_1" pkg="drone_simulator" type="drone.py" output="screen">
 		<rosparam param="x0">[1,1,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
 	</node>
