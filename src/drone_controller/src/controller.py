@@ -7,9 +7,7 @@ import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray
 
-import TestController as TC
 import MPCcontroller as MPC
-import LQRcontroller as LQR
 
 def control():
 	rospy.init_node("controller")
