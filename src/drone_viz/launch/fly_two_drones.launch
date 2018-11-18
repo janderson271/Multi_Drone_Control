@@ -1,0 +1,20 @@
+<launch>
+	<node name="drone1" pkg="drone_simulator" type="drone.py">
+		<rosparam param="x0">[1,1,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
+	</node>
+	<node name="drone2" pkg="drone_simulator" type="drone.py">
+		<rosparam param="x0">[0,0,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
+	</node>
+	<node pkg="drone_controller" type="controller.py" name="controller_1" output="screen">
+		<param name="drone" type="str" value="drone1"/>
+	</node>
+	<node pkg="drone_controller" type="controller.py" name="controller_2" output="screen">
+		<param name="drone" type="str" value="drone2"/>
+	</node>
+	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
+	<node name="viz" pkg="drone_viz" type="drone.py" />
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
+
+</launch>
