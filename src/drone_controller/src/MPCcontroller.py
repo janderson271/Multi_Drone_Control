@@ -30,6 +30,7 @@ class MPCcontroller():
 		B[ 9,:] = B[ 9,:]/inertia_xx
 		B[10,:] = B[10,:]/inertia_yy
 		B[11,:] = B[11,:]/inertia_zz
+		B = ts*B
 
 		# Dynamics Affine Disturbance discrete form
 		Bd = np.zeros((12,1))
@@ -40,7 +41,7 @@ class MPCcontroller():
 		xbar = cvx.Parameter(12)
 		xbar.value = np.zeros((nx, 1)).flatten()
 		xbar.value[2] = 1
-		P    = np.zeros((nx,nx))
+		P    = np.eye(nx)
 		Q    = np.eye(nx)
 		ubar = cvx.Parameter(4)
 		ubar.value = np.zeros((nu,1)).flatten()
@@ -58,12 +59,11 @@ class MPCcontroller():
 #		uu =  5*np.ones( 4).flatten()
 
 		# CVXPY Formulation
-
 		X = cvx.Variable((nx,n + 1))
 		U = cvx.Variable((nu,n))
 
 		# Cost function
-		J = cvx.quad_form(X[:,n],P)
+		J = cvx.quad_form(X[:,n]-xbar,P)
 		for k in range(n):
 			J += cvx.quad_form(X[:,k]-xbar,Q) + cvx.quad_form(U[:,k]-ubar,R)
 
@@ -73,7 +73,7 @@ class MPCcontroller():
 			constraints += [X[:,k+1] == A*X[:,k] + B*U[:,k] + Bd]	
 
 		# State Constraints
-		constraints += [X[:,0] == x0] # Initial Constraint
+		constraints += [X[:,0] == self.x0] # Initial Constraint
 		for k in range(1,n):
 			for i in range(nx):
 				if xl[i] is not None:
@@ -98,18 +98,9 @@ class MPCcontroller():
 
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
-		self.problem.solve()
+		self.problem.solve(solver = cvx.CVXOPT)
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:
-			print(self.probelm.status)
+			print(self.problem.status)
 			return None
-
-
-#	def actuate(self,x0,xbar,ubar):
-#		self.x0.value = x0.flatten()
-#		self.xbar.vauye = xbar.flatten()
-#		self.xbar.value = ubar.flatten()
-#		self.problem.solve()
-#		return self.U[:,0].value
-
