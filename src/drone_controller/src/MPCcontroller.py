@@ -110,7 +110,8 @@ class MPCcontroller():
 
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
-		self.problem.solve(solver=cvx.CVXOPT)
+		self.problem.solve()
+		#self.problem.solve(solver=cvx.CVXOPT)
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:
