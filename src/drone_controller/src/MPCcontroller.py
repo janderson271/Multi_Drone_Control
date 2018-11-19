@@ -41,22 +41,22 @@ class MPCcontroller():
 		xbar = cvx.Parameter(12)
 		xbar.value = np.zeros((nx, 1)).flatten()
 		xbar.value[2] = 1
-		P    = np.eye(nx)
-		Q    = np.eye(nx)
+		P    = np.eye(nx); P[0,0] = 0; P[1,1] = 0; P[2,2] = 8
+		Q    = P
 		ubar = cvx.Parameter(4)
 		ubar.value = np.zeros((nu,1)).flatten()
 		R    = np.eye(nu)
 
-		xl = [None] * nx
-		xu = [None] * nx
-#		ul = [None] * nu
-		uu = [None] * nu
+		# Variable constraints
+		xl = [None]*nx
+		xu = [None]*nx
+		d = 25
+		for i in range(6,8):
+			xl[i] = -d*3.14/180
+			xu[i] =  d*3.14/180
 
-#		m = 100
-#		xl = -m*np.ones((12,1)).flatten()
-#		xu =  m*np.ones(12).flatten()
 		ul =  np.zeros((4,1)).flatten()
-#		uu =  5*np.ones( 4).flatten()
+		uu =  5*np.ones( 4).flatten()
 
 		# CVXPY Formulation
 		X = cvx.Variable((nx,n + 1))
@@ -80,7 +80,6 @@ class MPCcontroller():
 					constraints += [xl[i] <= X[i,k]]
 				if xu[i] is not None:
 					constraints += [X[i,k] <= xu[i]]
-		constraints += [X[2,n] == 1] # Terminal Constraint
 
 		# Input Constraints
 		for k in range(0,n):
@@ -98,7 +97,7 @@ class MPCcontroller():
 
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
-		self.problem.solve(solver = cvx.CVXOPT)
+		self.problem.solve(solver=cvx.CVXOPT)
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:
