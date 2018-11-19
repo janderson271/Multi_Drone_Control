@@ -5,12 +5,29 @@ import cvxpy as cvx
 
 class MPCcontroller():
 
-	def __init__(self, ts = 0.1, x0=np.zeros((12,1)).flatten(), l=0.5, m=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3):
+	def __init__(self, ts = 0.1, P = np.ones((12,1)),   \
+							     Q = np.ones((12,1)),   \
+							     R = np.ones(( 4,1)),   \
+						    xbar_v = np.zeros((12,1)),  \
+					        ubar_v = np.zeros(( 4, 1)), \
+					          x0_v = np.zeros((12, 1))  ):
+			
+		P = np.diag(P)
+		Q = np.diag(Q)
+		R = np.diag(R)
+
+		l=0.5
+		m=1
+		inertia_xx=.45
+		inertia_yy =0.45
+		inertia_zz=0.7
+		k=0.3
+
 		n = 10
 		g = 9.81
 
 		self.x0 = cvx.Parameter(12)
-		self.x0.value = x0
+		self.x0.value = x0_v.flatten()
 
 		nx = 12
 		nu = 4
@@ -39,13 +56,9 @@ class MPCcontroller():
 
 		# MPC cost function
 		xbar = cvx.Parameter(12)
-		xbar.value = np.zeros((nx, 1)).flatten()
-		xbar.value[2] = 1
-		P    = np.eye(nx); P[0,0] = 0; P[1,1] = 0; P[2,2] = 8
-		Q    = P
+		xbar.value = xbar_v.flatten()
 		ubar = cvx.Parameter(4)
-		ubar.value = np.zeros((nu,1)).flatten()
-		R    = np.eye(nu)
+		ubar.value = ubar_v.flatten()
 
 		# Variable constraints
 		xl = [None]*nx

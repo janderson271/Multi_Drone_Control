@@ -9,13 +9,32 @@ from std_msgs.msg import Float32MultiArray, Int32
 
 import MPCcontroller as MPC
 
+def get_and_set_params(node_name, params):
+	# params is a dict from param_name -> default_value, None if no default value
+	vals = {}
+	for param, default in params.items():
+		if default is None:
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+		else:
+			if not rospy.has_param("{}/{}".format(node_name, param)):
+				rospy.set_param("{}/{}".format(node_name, param), default)
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+	return vals
+
 def control():
 	rospy.init_node("controller")
 	node_name = rospy.get_name()
 	drone_name = rospy.get_param(node_name + "/drone")
 
-	droneController = DroneController(MPC.MPCcontroller())
-	#droneController = DroneController(LQR.LQRcontroller())
+	params_dict = dict(ts=None, P=None, Q=None, R=None, xbar=None, ubar=None, x0=None)
+	params = get_and_set_params(node_name, params_dict)
+	droneController = DroneController(MPC.MPCcontroller(np.array(params['ts'])  ,\
+														np.array(params['P'])   ,\
+														np.array(params['Q'])   ,\
+														np.array(params['R'])   ,\
+														np.array(params['xbar']),\
+														np.array(params['ubar']),\
+														np.array(params['x0'])     ))
 
 	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
 	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, droneController.pos_callback)
