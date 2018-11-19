@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray, Int32
+import ipdb
 
 def set_subscribers(num_drones): 
 	subscribers = []
@@ -25,12 +26,11 @@ def watch():
 	ready = True
 	while not rospy.is_shutdown():
 		for sub in subscribers:
-			if sub.control_counter != n + 1:
+			if sub.control_counter == n:
 				ready = False
 		if ready:
 			n += 1
 			time.data = n
-			print('ready!')
 			pub.publish(time)
 		else :
 			ready = True

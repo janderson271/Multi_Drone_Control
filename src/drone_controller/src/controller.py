@@ -26,18 +26,18 @@ def control():
 
 	
 	while not rospy.is_shutdown():
-		uOpt = droneController.calc_actuation()
-		print('drone = ' + drone_name + 'uOpt = ' + str(uOpt))
-		if uOpt is not None and droneController.time <= droneController.global_time:
-			control_input.data = uOpt
-			control_pub.publish(control_input)
+		if droneController.time == droneController.global_time:
+			uOpt = droneController.calc_actuation()
+			if uOpt is not None:
+				control_input.data = uOpt
+				control_pub.publish(control_input)
 		rate.sleep()
 
 class DroneController:
 	def __init__(self, controller = None):
 		self.x = np.zeros(12)
 		self.controller = controller
-		self.time = -1 
+		self.time = 0
 		self.global_time = 0
 
 	def calc_actuation(self):
