@@ -5,7 +5,7 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Int32
 
 import MPCcontroller as MPC
 
@@ -20,14 +20,15 @@ def control():
 	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
 	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, droneController.pos_callback)
 	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, droneController.vel_callback)
+	time_sub = rospy.Subscriber("god/time", Int32, droneController.timer_callback)
 	rate = rospy.Rate(10)
 	control_input = Float32MultiArray()
 
 	
 	while not rospy.is_shutdown():
 		uOpt = droneController.calc_actuation()
-		print('uOpt = ' + str(uOpt))
-		if uOpt is not None:
+		print('drone = ' + drone_name + 'uOpt = ' + str(uOpt))
+		if uOpt is not None and droneController.time <= droneController.global_time:
 			control_input.data = uOpt
 			control_pub.publish(control_input)
 		rate.sleep()
@@ -36,8 +37,11 @@ class DroneController:
 	def __init__(self, controller = None):
 		self.x = np.zeros(12)
 		self.controller = controller
+		self.time = -1 
+		self.global_time = 0
 
 	def calc_actuation(self):
+		self.time += 1
 		return self.controller.actuate(self.x.flatten())
 
 	def pos_callback(self,pos_msg):
@@ -53,7 +57,10 @@ class DroneController:
 
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
-		def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
+	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
+
+	def timer_callback(self, time_msg):
+		self.global_time = time_msg.data
 
 if __name__ == "__main__":
     try:

@@ -18,7 +18,7 @@
 	<node name="viz" pkg="drone_viz" type="drone.py" />
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
 
-	<node name="god" pkg="drone_simulator" type="god.py">
+	<node name="god" pkg="drone_simulator" type="god.py" output="screen">
 		<param name="num_drones" type="int" value="2"/>
 	</node>
 

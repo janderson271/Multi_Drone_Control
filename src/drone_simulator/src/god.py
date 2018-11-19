@@ -30,6 +30,7 @@ def watch():
 		if ready:
 			n += 1
 			time.data = n
+			print('ready!')
 			pub.publish(time)
 		else :
 			ready = True

@@ -56,9 +56,6 @@ def sim():
 
 	while not rospy.is_shutdown():
 		#on fixed timestip: simulate the system and publish
-		print(drone.global_time)
-		print(drone.time)
-		print('kaas')
 		if drone.global_time > drone.time:
 			position, velocity = drone.sim_step()
 			pos_pub.publish(position)
