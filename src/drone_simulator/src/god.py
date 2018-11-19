@@ -2,23 +2,52 @@
 
 import rospy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Float32MultiArray, Int32
+import ipdb
 
-def stuff():
-	rospy.init_node("node_name")
-	pub = rospy.Publisher("topic_name", Twist, queue_size=1)
-	
+def set_subscribers(num_drones): 
+	subscribers = []
+	for i in range(1, num_drones + 1):
+		tracker = Tracker()
+		sub = rospy.Subscriber("drone_" + str(i) + "/control", Float32MultiArray, tracker.actuation_callback)
+		subscribers.append(tracker)
+	return subscribers
+
+def watch():
+	rospy.init_node("god")
+	node_name = rospy.get_name()
+	num_drones = rospy.get_param(node_name + "/num_drones")
+
+	pub = rospy.Publisher(node_name + "/time", Int32, queue_size=0)
+	subscribers = set_subscribers(num_drones)
+
+	time = Int32()
+	n = 0
+	ready = True
 	while not rospy.is_shutdown():
-		msg = Twist()
-		msg.linear.x = 2
-		pub.publish(msg)
+		for sub in subscribers:
+			if sub.control_counter == n:
+				ready = False
+		if ready:
+			n += 1
+			time.data = n
+			pub.publish(time)
+		else :
+			ready = True
+		
 
-class God: 
+class Tracker: 
 	def __init__(self):
-		pass
+		self.control_counter = 0
+		self.msg = Float32MultiArray()
+
+	def actuation_callback(self, msg):
+		self.control_counter += 1
+		self.msg = msg
 
     
 if __name__ == "__main__":
     try:
-	 	stuff()
+	 	watch()
     except rospy.ROSInterruptException:
 		pass

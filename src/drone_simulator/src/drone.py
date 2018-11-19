@@ -4,18 +4,51 @@ import rospy
 import ipdb
 from geometry_msgs.msg import Pose, Twist, Wrench
 from tf.transformations import euler_from_quaternion, quaternion_from_euler, euler_matrix, inverse_matrix
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Int32
+
+def get_and_set_params(node_name, params):
+	# params is a dict from param_name -> default_value, None if no default value
+	vals = {}
+	for param, default in params.items():
+		if default is None:
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+		else:
+			if not rospy.has_param("{}/{}".format(node_name, param)):
+				rospy.set_param("{}/{}".format(node_name, param), default)
+			vals[param] = rospy.get_param("{}/{}".format(node_name, param))
+	return vals
+
+def clear_params(node_name, params):
+	for k in params:
+		try:
+			rospy.delete_param("{}/{}".format(node_name, k))
+		except KeyError:
+			print("value {} not set".format(k))
+	return True
 
 def sim():
 	rospy.init_node("drone")
 	node_name = rospy.get_name()
+	print(node_name)
 	pos_pub = rospy.Publisher(node_name + "/position", Pose, queue_size=1)
 	vel_pub = rospy.Publisher(node_name + "/velocity", Twist, queue_size=1)
 	
-	drone = Drone()
+	params_dict = dict(length=0.5, width=0.5, mass=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3, dt = 0.1, x0=[0.] * 12)
+	params = get_and_set_params(node_name, params_dict)
+	print(len(params["x0"]))
+	params["x0"] = np.array(params["x0"], dtype=np.float64).reshape((12, 1))
+	drone = Drone(**params)
+
+	if rospy.has_param("/{}/{}".format(node_name, "u_init")):
+		param = rospy.get_param("/{}/{}".format(node_name, "u_init"))
+		param = np.array(param).reshape((4, 1))
+		drone.u = param
+		print("setting initial u to ", drone.u)
 	
 	control_sub = rospy.Subscriber(node_name + "/control", Float32MultiArray, drone.control_callback)
 	control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.control_callback)
+
+	time_sub = rospy.Subscriber("god/time", Int32, drone.timer_callback)
 	
 	rate = rospy.Rate(1/drone.dt)
 	position = drone.get_pose()
@@ -23,12 +56,12 @@ def sim():
 
 	while not rospy.is_shutdown():
 		#on fixed timestip: simulate the system and publish
-		ipdb.set_trace()
-		if position.position.z >= 0 or np.sum(drone.u) > 0:
+		if drone.global_time > drone.time:
 			position, velocity = drone.sim_step()
-		pos_pub.publish(position)
-		vel_pub.publish(velocity)
+			pos_pub.publish(position)
+			vel_pub.publish(velocity)
 		rate.sleep()
+	clear_params(node_name, params_dict)
 
 
 class Drone: 
@@ -43,6 +76,8 @@ class Drone:
 		self.x = x0
 		self.u = np.zeros((4,1))
 		self.Fext = np.zeros((3,1))
+		self.time = 0
+		self.global_time = 0
 
 
 	def sim_step(self):
@@ -84,9 +119,17 @@ class Drone:
 		self.x[6:9] = self.x[6:9] + a_lin * self.dt
 		self.x[9:] = self.x[9:] + a_ang * self.dt
 
+		# Enforce that the ground exists
+		self.x[2] = np.max(self.x[2], 0)
+		if self.x[2] == 0:
+			self.x[8] = np.max(self.x[8], 0)
+
 		# return messages
 		position = self.get_pose()
 		velocity = self.get_twist()
+
+		self.time += 1
+
 		return position, velocity
 
 	def get_pose(self):
@@ -120,6 +163,9 @@ class Drone:
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
 
+	def timer_callback(self, time_msg):
+		self.global_time = time_msg.data
+
 	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
 
 	def toLocal(self, vector):
@@ -142,6 +188,8 @@ class Drone:
 		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])
 		R = np.dot(Rx, np.dot(Ry,Rz))
 		return np.dot(R, vector)
+
+
 
 
 

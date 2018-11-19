@@ -1,8 +1,7 @@
 ts = 0.1;
 
 % drone characteristics
-l = 1;
-w = 1;
+l = 0.5;
 m = 1;
 J = diag([0.45,0.45,0.7]);
 
@@ -19,10 +18,10 @@ A(7:9,10:12) = eye(3);
 A = eye(12) + ts*A; % ZOH discretization
 
 nu = 4;
-k = 1;
+k = 0.3;
 B = zeros(12,4);
 B(6,:) = 1/m*[1,1,1,1];
-B(10:12,:) = [l,-l,-l,l;-l,-l,l,l;-k,k,-k,k];
+B(10:12,:) = inv(J)*[l,-l,-l,l;-l,-l,l,l;-k,k,-k,k];
 B = ts*B; % ZOH discretization
 
 Bd = zeros(12,1);
