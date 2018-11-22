@@ -33,10 +33,10 @@ def drone_viz():
 			marker.id = i
 			marker.header.stamp = t
 			marker.type = Marker.MESH_RESOURCE
-			marker.mesh_resource = "package://drone_viz/src/drone.obj"
+			marker.mesh_resource = "package://drone_viz/src/drone.stl"
 			marker.action = Marker.ADD
 			marker.pose = position_dict[drone]
-			marker.pose.orientation.x += np.pi / 3
+			#marker.pose.orientation.x += np.pi / 3
 			marker.scale = Vector3(0.1,0.1,0.1)
 			marker.color.r = 0.0
 			marker.color.g = 1.0
