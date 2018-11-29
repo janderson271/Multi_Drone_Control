@@ -47,6 +47,8 @@ def control():
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
 			uOpt = droneController.calc_actuation()
+			print('uOpt is')
+			print(uOpt)
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)
