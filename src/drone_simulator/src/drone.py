@@ -134,7 +134,7 @@ class Drone:
 
 	def get_pose(self):
 		position = self.x[0:3]
-		orientation = quaternion_from_euler(self.x[3], self.x[5], self.x[6])
+		orientation = quaternion_from_euler(self.x[3], self.x[4], self.x[5])
 		pose = Pose()
 		pose.position.x = position[0]
 		pose.position.y = position[1]
