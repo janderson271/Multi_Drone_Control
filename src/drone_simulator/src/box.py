@@ -2,8 +2,12 @@
 import numpy as np
 import rospy
 import rosnode
-from geometry_msgs.msg import Pose, Wrench
-from tf.transformations import euler_from_quaternion, quaternion_from_euler, euler_matrix, inverse_matrix
+import ipdb
+from std_msgs.msg import Int32
+from geometry_msgs.msg import Pose, Wrench, Vector3
+
+def skew(x):
+	return np.array([[0, -x[2], x[1]], [x[2], 0, x[0]], [x[1], x[0], 0]])
 
 def get_and_set_params(node_name, params):
 	# params is a dict from param_name -> default_value, None if no default value
@@ -31,12 +35,15 @@ def sim():
 
 	params_dict = dict(rope_length=1, mass=10, dt=0.1, x0=[0.]*3, v0=[0.]*3)
 	params = get_and_set_params(node_name, params_dict)
-	print(len(params['x0']))
 	params['x0'] = np.array(params['x0'], dtype=np.float64).reshape((1,3))
+	params['v0'] = np.array(params['v0'], dtype=np.float64).reshape((1,3))
 	
 	# initialize box
 	box = Box(**params)
+	# box = Box()
 	drone_node_names = rosnode.get_node_names()
+
+	box.num_drones = len(drone_node_names)
 
 	# get drone positions
 	for drone_node in drone_node_names:
@@ -50,10 +57,10 @@ def sim():
 	rate = rospy.Rate(1/box.dt)
 	while not rospy.is_shutdown():
 		if box.global_time > box.time:
-			forces, position = drone.sim_step()
+			forces, position = box.sim_step()
 			# publish Fext
 			for i in range(0, len(forces)):
-				Fext = box.toDrone(forces[i], drone_positions[i])
+				Fext = box.toDrone(forces[i], box.drone_orientations[i])
 				force_pub = rospy.Publisher(drone_node_names[i] + '/external_force', Wrench, queue_size=1)
 				force_pub.publish(Fext)
 			# publish box position
@@ -66,15 +73,17 @@ def sim():
 
 class Box: 
 
-	def __init__(self, rope_length=1, mass=10, dt = 0.1, x0=np.zeros((1,3)), v0=np.zeros((1,3))):
+	def __init__(self, rope_length=1, mass=10, dt = 0.1, x0=np.zeros((1,3)), v0=np.ones((1,3))):
 		self.rope_length = rope_length
 		self.mass = mass
 		self.dt = dt
-		self.pos = x0
-		self.vel = v0
+		self.pos = x0.T
+		self.vel = v0.T
 		self.drone_positions = []
+		self.drone_orientations = []
 		self.time = 0
 		self.global_time = 0
+		self.num_drones = 0
 
 	def reset(self):
 		self.drone_positions = []
@@ -88,9 +97,10 @@ class Box:
 		''' 
 
 		# forces on box
-		Fg = np.array([[0, 0, -self.mass*9.81]])
+		Fg = np.array([[0, 0, -self.mass*9.81]]).T
+		# ipdb.set_trace()
 		T = -Fg[2]/sum(row[2] for row in self.drone_positions if np.linalg.norm(self.pos - row)>=self.rope_length)
-		Fd = np.zeros((1,3))
+		Fd = np.zeros((1,3)).T
 		forces = []
 
 		for drone_pos in self.drone_positions:
@@ -134,23 +144,31 @@ class Box:
 		return pose
 
 	def vectornp(self, msg): 
-		return np.array([[msg.x, msg.y, msg.z]])
+		return np.array([[msg.x, msg.y, msg.z]]).T
 
-	def skew(x):
-    	return np.array([[0, -x[2], x[1]], [x[2], 0, x[0]], [x[1], x[0], 0]])
+	def npvector(self, msg):
+		return Vector3(msg[0], msg[1], msg[2])
    
 	def drone_callback(self, position_msg):
+		if len(self.drone_positions) == self.num_drones:
+			self.drone_positions = []
+			self.drone_orientations = []
+
 		self.drone_positions += [self.vectornp(position_msg.position)]
+		self.drone_orientations += [position_msg.orientation]
 
 	def timer_callback(self, time_msg):
 		self.global_time = time_msg.data
 
 	def toDrone(self, v, p):
-		# convert vector v to coordinates of drone with pose p
-		q0 = p.quaternion.w;
-		qv = self.vectornp(p.quaternion)
+		# convert vector v to coordinates of drone with quaternion p
+		q0 = p.w;
+		qv = self.vectornp(p)
+		f = self.vectornp(v.force)
 		T = q0*q0*np.eye(3) - (qv.T*qv).dot(np.eye(3)) + 2*(qv*qv.T) - 2*q0*skew(qv)
-		return T.dot(v)
+		w = Wrench()
+		w.force = self.npvector(T.dot(f))
+		return w
 
 
 if __name__ == '__main__':
