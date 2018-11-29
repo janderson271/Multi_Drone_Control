@@ -31,7 +31,7 @@ def main():
 			if node not in tf_dict:
 				tf_dict[node] = tf.TransformBroadcaster()
 			pos, ori = (curr_pose.position.x, curr_pose.position.y, curr_pose.position.z), \
-				(curr_pose.orientation.x, curr_pose.orientation.y, curr_pose.orientation.z, 1)
+				(curr_pose.orientation.x, curr_pose.orientation.y, curr_pose.orientation.z, curr_pose.orientation.w)
 			print(node)
 			tf_dict[node].sendTransform(pos, ori, rospy.Time.now(), node, "world")
 		rate.sleep()
