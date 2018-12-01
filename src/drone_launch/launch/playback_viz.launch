@@ -1,0 +1,7 @@
+<launch>
+<!--
+	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
+	<node name="viz" pkg="drone_viz" type="drone.py" />
+-->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
+</launch>
