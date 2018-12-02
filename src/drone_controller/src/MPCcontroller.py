@@ -116,6 +116,11 @@ class MPCcontroller():
 		self.ubar = ubar
 		self.problem = cvx.Problem(cvx.Minimize(J),constraints)
 
+		self.Kmat =np.array( [[-0.0009   ,-0.0009    ,0.0743   ,-0.0016   ,-0.0016    ,0.0857   , 0.0079   ,-0.0079 ,   0.0002 ,   0.0019   ,-0.0019 ,   0.0003],
+   					[-0.0009  ,  0.0009 ,   0.0743   ,-0.0016   , 0.0016 ,   0.0857   ,-0.0079   ,-0.0079   ,-0.0002   ,-0.0019   ,-0.0019   ,-0.0003],
+    				[0.0009 ,   0.0009   , 0.0743 ,   0.0016 ,   0.0016,    0.0857   ,-0.0079 ,   0.0079  ,  0.0002   ,-0.0019    0.0019    0.0003],
+    				[0.0009   ,-0.0009 ,   0.0743,    0.0016   ,-0.0016  ,  0.0857   , 0.0079   , 0.0079   ,-0.0002 ,   0.0019 ,   0.0019   ,-0.0003]])
+
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
 		#self.problem.solve()
@@ -127,3 +132,7 @@ class MPCcontroller():
 		else:
 			print(self.problem.status)
 			return None
+
+	def actuateLQR(self.x0):
+		return np.dot(self.Kmat, x0)
+
