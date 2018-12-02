@@ -1,9 +1,10 @@
+%% simulation test setup
 ts = 0.1;
 
 % drone characteristics
-l = 0.5;
-m = 1;
-J = diag([0.45,0.45,0.7]);
+l = 0.033;
+m = 0.032;
+J = diag([16e-6,16e-6,29e-6]);
 
 % drone dynamics
 x0 = zeros(12,1);
@@ -21,23 +22,24 @@ nu = 4;
 k = 0.3;
 B = zeros(12,4);
 B(6,:) = 1/m*[1,1,1,1];
-B(10:12,:) = inv(J)*[l,-l,-l,l;-l,-l,l,l;-k,k,-k,k];
+B(10:12,:) = inv(J)*[l,-l,-l,l;-l,-l,l,l;k,-k,k,-k];
 B = ts*B; % ZOH discretization
 
 Bd = zeros(12,1);
 Bd(6) = -g;
 Bd = ts*Bd; % ZOH discretization
 
+%% Setup Problem
 % Quadratic Cost Function
 xbar = zeros(nx, 1);
-xbar(3) = 1;
-P    = zeros(nx,nx);
+xbar(1:3) = 1;
+P    = eye(nx,nx);
 Q    = eye(nx);
 ubar = zeros(nu,1);
 R    = eye(nu);
 
 % Horizon
-n = 10;
+n = 15;
 
 % state constraints
 m = 100;
@@ -51,5 +53,26 @@ xf = zeros(12,1);
 xf(3) = 1;
 bf = [xf;-xf];
 Af = [eye(12);-eye(12)];
+Af = [];
+bf = [];
 
-[u] = solve_cftoc_YALMIP(A, B, Bd, P, Q, R, n, xbar, ubar, x0, xL, xU, uL, uU, bf, Af)
+%% Solve
+hor = 30;
+xSim = zeros(nx,hor+1);
+xSim(:,1) = x0;
+
+for t = 1:hor
+    disp(t)
+    [feas, xOpt, uOpt, JOpt] = solve_cftoc(A, B, Bd, P, Q, R, n, xbar, ubar, xSim(:,t), xL, xU, uL, uU, bf, Af);
+    u = uOpt(:,1);
+    xSim(:,t+1) = A*xSim(:,t) + B*u + Bd;
+end
+
+
+%% Plot
+figure
+scatter3(xSim(1,:), xSim(2,:), xSim(3,:))
+xlim([-2,2])
+ylim([-2,2])
+zlim([0,2])
+
