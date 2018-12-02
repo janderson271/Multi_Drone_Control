@@ -15,8 +15,8 @@ def sim():
 		drone_node_names = rosnode.get_node_names()
 		for drone_node in drone_node_names:
 			if drone_node.startswith('/drone'):
-				goal = Float32MultiArray
-				goal.data = np.array([1,1,1])
+				goal = Float32MultiArray()
+				goal.data = [1,1,1]
 				waypoint_pub = rospy.Publisher(drone_node + '/waypoint', Float32MultiArray, queue_size=10)
 				waypoint_pub.publish(goal)
 		rate.sleep()
