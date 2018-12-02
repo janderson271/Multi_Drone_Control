@@ -33,7 +33,7 @@ def sim():
 	pos_pub = rospy.Publisher(node_name + "/position", Pose, queue_size=1)
 	vel_pub = rospy.Publisher(node_name + "/velocity", Twist, queue_size=1)
 	
-	params_dict = dict(length=0.5, width=0.5, mass=1, inertia_xx=.45, inertia_yy =0.45, inertia_zz=0.7, k=0.3, dt = 0.1, x0=[0.] * 12)
+	params_dict = dict(length=0.033, width=0.033, mass=0.032, inertia_xx=16e-6, inertia_yy =16e-6, inertia_zz=29e-6, k=0.01, dt = 0.1, x0=[0.] * 12)
 	params = get_and_set_params(node_name, params_dict)
 	print(len(params["x0"]))
 	params["x0"] = np.array(params["x0"], dtype=np.float64).reshape((12, 1))
