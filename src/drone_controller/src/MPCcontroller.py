@@ -132,9 +132,7 @@ class MPCcontroller():
 		else:
 			print(self.problem.status)
 			return None
-<<<<<<< HEAD
 
-	def actuateLQR(sel.x0):
+	def actuateLQR(self.x0):
 		return np.dot(self.Kmat, x0)
-=======
->>>>>>> 3456371903480af3025de760815d308453c495ea
+
