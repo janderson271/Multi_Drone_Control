@@ -46,7 +46,7 @@ def sim():
 		print("setting initial u to ", drone.u)
 	
 	control_sub = rospy.Subscriber(node_name + "/control", Float32MultiArray, drone.control_callback)
-	control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.control_callback)
+	control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.external_callback)
 
 	time_sub = rospy.Subscriber("god/time", Int32, drone.timer_callback)
 	
