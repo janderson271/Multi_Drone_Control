@@ -16,14 +16,14 @@ class MPCcontroller():
 		Q = np.diag(Q)
 		R = np.diag(R)
 
-		l=0.5
-		m=1
-		inertia_xx=.45
-		inertia_yy =0.45
-		inertia_zz=0.7
-		k=0.3
+		l=0.033
+		m=0.032
+		inertia_xx = 16e-6
+		inertia_yy = inertia_xx
+		inertia_zz = 29e-6
+		k=0.01
 
-		n = 10
+		n = 15
 		g = 9.81
 
 		self.x0 = cvx.Parameter(12)
@@ -43,7 +43,7 @@ class MPCcontroller():
 		# B discrete form
 		B = np.zeros((12,4))
 		B[5,:] = 1/m*np.array([1,1,1,1])
-		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[-k,k,-k,k]])
+		B[9:12,:] = np.array([[l,-l,-l,l],[-l,-l,l,l],[k,-k,k,-k]])
 		B[ 9,:] = B[ 9,:]/inertia_xx
 		B[10,:] = B[10,:]/inertia_yy
 		B[11,:] = B[11,:]/inertia_zz
