@@ -23,7 +23,7 @@ class MPCcontroller():
 		inertia_zz = 29e-6
 		k=0.01
 
-		n = 30
+		n = 10
 		g = 9.81
 
 		self.x0 = cvx.Parameter(12)
@@ -121,7 +121,7 @@ class MPCcontroller():
 		#self.problem.solve()
 		self.problem.solve(solver=cvx.CVXOPT)
 		print('Final xOpt')
-		print(self.X.value[:,29])
+		print(self.X.value[:,-1])
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:

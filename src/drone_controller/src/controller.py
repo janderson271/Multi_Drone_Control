@@ -6,6 +6,7 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import rospy
 from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray, Int32
+import matplotlib.pyplot as plt
 
 import MPCcontroller as MPC
 
@@ -43,6 +44,7 @@ def control():
 	rate = rospy.Rate(10)
 	control_input = Float32MultiArray()
 
+	plt.figure()
 	
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
@@ -52,6 +54,8 @@ def control():
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)
+				droneController.plot_things()
+				plt.pause(.01)
 		rate.sleep()
 
 class DroneController:
@@ -60,6 +64,26 @@ class DroneController:
 		self.controller = controller
 		self.time = 0
 		self.global_time = 0
+
+	def plot_things(self):
+		X = self.controller.X.value
+		x, y, z = X[0, :], X[1, :], X[2, :]
+		plt.subplot(3,1,1)
+		plt.cla()
+		plt.plot(x, 'ro-')
+		plt.plot(self.x[0], 0, 'k')
+		plt.ylim([0, 10])
+		plt.subplot(3,1,2)
+		plt.cla()
+		plt.plot(y, 'ro-')
+		plt.plot(self.x[1], 0, 'k')
+		plt.ylim([0, 10])
+		plt.subplot(3,1,3)
+		plt.cla()
+		plt.plot(z, 'ro-')
+		plt.plot(self.x[2], 0, 'k')
+		plt.ylim([0, 10])
+		
 
 	def calc_actuation(self):
 		self.time += 1
