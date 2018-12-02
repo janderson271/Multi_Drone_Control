@@ -23,7 +23,7 @@ class MPCcontroller():
 		inertia_zz = 29e-6
 		k=0.01
 
-		n = 15
+		n = 30
 		g = 9.81
 
 		self.x0 = cvx.Parameter(12)
@@ -63,13 +63,21 @@ class MPCcontroller():
 		# Variable constraints
 		xl = [None]*nx
 		xu = [None]*nx
-		d = 25
+		v = 0.15
+		for i in range(3,5):
+			xl[i] = -v
+			xu[i] =  v
+		d = 15
 		for i in range(6,8):
 			xl[i] = -d*3.14/180
 			xu[i] =  d*3.14/180
+		dv = 20
+		for i in range(9,11):
+			xl[i] = -dv*3.14/180
+			xu[i] =  dv*3.14/180
 
 		ul =  np.zeros((4,1)).flatten()
-		uu =  5*np.ones( 4).flatten()
+		uu =  0.15*np.ones( 4).flatten()
 
 		# CVXPY Formulation
 		X = cvx.Variable((nx,n + 1))
@@ -110,8 +118,10 @@ class MPCcontroller():
 
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
-		self.problem.solve()
-		#self.problem.solve(solver=cvx.CVXOPT)
+		#self.problem.solve()
+		self.problem.solve(solver=cvx.CVXOPT)
+		print('Final xOpt')
+		print(self.X.value[:,29])
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:
