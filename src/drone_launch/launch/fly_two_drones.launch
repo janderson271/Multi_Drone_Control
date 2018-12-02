@@ -17,7 +17,7 @@
 		<rosparam param="P">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
 		<rosparam param="Q">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
-		<rosparam param="xbar">[1,1,1,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="xbar">[7,6,2,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
 		<rosparam param="x0">[0,0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 	</node>

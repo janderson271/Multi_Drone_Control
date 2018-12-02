@@ -63,15 +63,15 @@ class MPCcontroller():
 		# Variable constraints
 		xl = [None]*nx
 		xu = [None]*nx
-		v = 0.15
-		for i in range(3,5):
-			xl[i] = -v
-			xu[i] =  v
+		#v = 0.15
+		#for i in range(3,5):
+		#	xl[i] = -v
+		#	xu[i] =  v
 		d = 15
 		for i in range(6,8):
 			xl[i] = -d*3.14/180
 			xu[i] =  d*3.14/180
-		dv = 20
+		dv = 10
 		for i in range(9,11):
 			xl[i] = -dv*3.14/180
 			xu[i] =  dv*3.14/180
@@ -95,7 +95,7 @@ class MPCcontroller():
 
 		# State Constraints
 		constraints += [X[:,0] == self.x0] # Initial Constraint
-		for k in range(1,n):
+		for k in range(4,n):
 			for i in range(nx):
 				if xl[i] is not None:
 					constraints += [xl[i] <= X[i,k]]
@@ -116,6 +116,11 @@ class MPCcontroller():
 		self.ubar = ubar
 		self.problem = cvx.Problem(cvx.Minimize(J),constraints)
 
+		self.Kmat =np.array( [[-0.0009   ,-0.0009    ,0.0743   ,-0.0016   ,-0.0016    ,0.0857   , 0.0079   ,-0.0079 ,   0.0002 ,   0.0019   ,-0.0019 ,   0.0003],
+   					[-0.0009  ,  0.0009 ,   0.0743   ,-0.0016   , 0.0016 ,   0.0857   ,-0.0079   ,-0.0079   ,-0.0002   ,-0.0019   ,-0.0019   ,-0.0003],
+    				[0.0009 ,   0.0009   , 0.0743 ,   0.0016 ,   0.0016,    0.0857   ,-0.0079 ,   0.0079  ,  0.0002   ,-0.0019    0.0019    0.0003],
+    				[0.0009   ,-0.0009 ,   0.0743,    0.0016   ,-0.0016  ,  0.0857   , 0.0079   , 0.0079   ,-0.0002 ,   0.0019 ,   0.0019   ,-0.0003]])
+
 	def actuate(self,x0):
 		self.x0.value = x0.flatten()
 		#self.problem.solve()
@@ -127,3 +132,7 @@ class MPCcontroller():
 		else:
 			print(self.problem.status)
 			return None
+
+	def actuateLQR(self.x0):
+		return np.dot(self.Kmat, x0)
+
