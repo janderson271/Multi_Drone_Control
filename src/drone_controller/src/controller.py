@@ -8,7 +8,7 @@ from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray, Int32
 import matplotlib.pyplot as plt
 
-import MPCcontroller as MPC
+import MPClifter as MPC
 
 def get_and_set_params(node_name, params):
 	# params is a dict from param_name -> default_value, None if no default value
@@ -49,8 +49,8 @@ def control():
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
 			uOpt = droneController.calc_actuation()
-			print('uOpt is')
-			print(uOpt)
+			#print('uOpt is')
+			#print(uOpt)
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)
