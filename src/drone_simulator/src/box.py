@@ -33,7 +33,7 @@ def sim():
 	node_name = 'box'
 	rospy.init_node(node_name)
 
-	params_dict = dict(rope_length=1, mass=10, dt=0.1, x0=[0.]*3, v0=[0.]*3)
+	params_dict = dict(rope_length=1, mass=0.03, dt=0.1, x0=[0.]*3, v0=[0.]*3)
 	params = get_and_set_params(node_name, params_dict)
 	params['x0'] = np.array(params['x0'], dtype=np.float64).reshape((1,3))
 	params['v0'] = np.array(params['v0'], dtype=np.float64).reshape((1,3))
@@ -60,7 +60,8 @@ def sim():
 			forces, position = box.sim_step()
 			# publish Fext
 			for i in range(0, len(forces)):
-				Fext = box.toDrone(forces[i], box.drone_orientations[i])
+				# Fext = box.toDrone(forces[i], box.drone_orientations[i])
+				Fext = forces[i]
 				force_pub = rospy.Publisher(drone_node_names[i] + '/external_force', Wrench, queue_size=1)
 				force_pub.publish(Fext)
 			# publish box position
@@ -71,9 +72,9 @@ def sim():
 		
 	clear_params(node_name, params_dict)
 
-class Box: 
+class Box:  
 
-	def __init__(self, rope_length=1, mass=10, dt = 0.1, x0=np.zeros((1,3)), v0=np.ones((1,3))):
+	def __init__(self, rope_length=1, mass=0.03, dt = 0.1, x0=np.zeros((1,3)), v0=np.ones((1,3))):
 		self.rope_length = rope_length
 		self.mass = mass
 		self.dt = dt
@@ -84,6 +85,8 @@ class Box:
 		self.time = 0
 		self.global_time = 0
 		self.num_drones = 0
+		self.k = 0.1
+		self.x_last = 0
 
 	def reset(self):
 		self.drone_positions = []
@@ -94,12 +97,21 @@ class Box:
 			where drone_i = [i.x, i.y, i.z]
 		return [[wrench_1], [wrench_2], ... [wrench_n]]
 			where wrench_i.force.x = fext_x on drone_i, in drone_i frame
-		''' 
+		'''
+
+		if self.drone_positions == []:
+			self.time += 1
+			return [Wrench()]*self.num_drones, self.get_pose()
 
 		# forces on box
 		Fg = np.array([[0, 0, -self.mass*9.81]]).T
 		# ipdb.set_trace()
-		T = -Fg[2]/sum(row[2] for row in self.drone_positions if np.linalg.norm(self.pos - row)>=self.rope_length)
+		sum_z = sum((row[2] - self.pos[2]) for row in self.drone_positions if np.linalg.norm(self.pos - row)>=self.rope_length)
+		if sum_z == 0:
+			self.time += 1
+			return [Wrench()]*self.num_drones, self.get_pose()
+
+		T = -Fg[2]/sum_z
 		Fd = np.zeros((1,3)).T
 		forces = []
 
@@ -112,15 +124,19 @@ class Box:
 				F.force.z = 0
 			# drone supporting box
 			else:
-				f = T*(self.pos - drone_pos)/np.linalg.norm(self.pos - drone_pos)
-				F.force.x = f[0]
-				F.force.y = f[1]
-				F.force.z = f[2]
+				# f = T*(self.pos - drone_pos) #/np.linalg.norm(self.pos - drone_pos)
+				f = -self.k * (np.linalg.norm(self.pos - drone_pos) - self.rope_length) * (self.pos - drone_pos) / np.linalg.norm(self.pos - drone_pos)
+				damping = (np.linalg.norm(self.pos - drone_pos) - self.x_last)/self.dt
+				self.x_last = np.linalg.norm(self.pos - drone_pos)
+				F.force.x = -f[0]
+				F.force.y = -f[1]
+				F.force.z = -f[2]
 				Fd += f
 			forces += [F]	
 
 		# all forces
-		Fs = Fg + Fd
+		c = 0.1
+		Fs = Fg + Fd - c*damping
 
 		# acceleration
 		accel = Fs / self.mass	
@@ -130,8 +146,8 @@ class Box:
 		self.vel = self.vel + accel * self.dt
 
 		# enforce ground
-		self.pos[2] = np.max(self.pos[2], 0)
-		
+		self.pos[2] = np.max([self.pos[2], 0])
+
 		# return forces, new box position
 		self.time += 1
 		return forces, self.get_pose()
