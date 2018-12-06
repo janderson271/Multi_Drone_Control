@@ -14,12 +14,14 @@ class MPCcontroller():
 					        ubar_v = np.zeros(( 4, 1)), \
 					          x0_v = np.zeros((12, 1))  ):
 
+		self.r = xbar_v[0:3].reshape((3,1))
+
 		P = np.diag(P)
 		Q = np.diag(Q)
 		R = np.diag(R)
 
 		l=0.033
-		m=0.032*0.1
+		m=0.032
 		inertia_xx = 16e-6
 		inertia_yy = inertia_xx
 		inertia_zz = 29e-6
@@ -55,31 +57,36 @@ class MPCcontroller():
 		self.B = B
 
 		# Dynamics Affine Disturbance discrete form
-		Bd = np.zeros((12,1))
-		Bd[5] = -g
-		Bd = ts*Bd.flatten()
-		self.Bd = Bd
+		Bg= np.zeros((12,1))
+		Bg[5] = -g
+		Bg= ts*Bg.flatten()
+		self.Bg= Bg
 
 		# Force Disturbance Parameter
 		self.Fd = cvx.Parameter(3)
 		self.Fd.value = np.zeros((3,1)).flatten()
-		BFd = np.zeros((12,3))
-		BFd[3,0] = ts/m 
-		BFd[4,1] = ts/m
-		BFd[5,2] = ts/m
-		self.BFd = BFd
+		Bd = np.zeros((12,3))
+		Bd[3,0] = ts/m 
+		Bd[4,1] = ts/m
+		Bd[5,2] = ts/m
+		self.Bd = Bd
 
-		# Disturbance Observer
-		self.Cd = BFd.transpose()
+		# Disturbance Observer 
 		self.x_obs = np.zeros((15,1))
-		self.A_obs = np.block([[A,BFd],[np.zeros((3,12)),np.eye(3)]])
+		C = np.eye(12)
+		Cd = np.zeros((12,3))
+		self.A_obs = np.block([[A,Bd],[np.zeros((3,12)),np.eye(3)]])
 		self.B_obs = np.block([[B],[np.zeros((3,4))]])
-		self.Bd_obs = np.block([[Bd.reshape((12,1))],[np.zeros((3,1))]])
-		self.C_obs = np.block([np.eye(12),np.zeros((12,3))])
-		poles = np.array([93.,94,95,96,97,98,99,100,101,102,103,104,105,106,107])
-		poles = poles/130
+		self.Bg_obs = np.block([[Bg.reshape((12,1))],[np.zeros((3,1))]])
+		self.C_obs = np.block([[C,Cd]])
+		poles = np.array([93.,94,95,96,97,98,99,100,101,102,103,104,105,106,107])/150
 		sys = scipy.signal.place_poles(self.A_obs.transpose(),self.C_obs.transpose(),poles)
 		self.L_obs = sys.gain_matrix.transpose()
+		self.R = R
+
+		# Disturbance Rejection
+		C = np.block([np.eye(3),np.zeros((3,9))])
+		self.A_track = np.block([[A-np.eye(12),B],[C,np.zeros((3,4))]])
 
 		# MPC cost function
 		xbar = cvx.Parameter(12)
@@ -114,7 +121,7 @@ class MPCcontroller():
 		constraints = []
 		# Dynamic Constraints		
 		for k in range(0,n):
-			constraints += [X[:,k+1] == A*X[:,k] + B*U[:,k] + Bd + BFd*self.Fd]	
+			constraints += [X[:,k+1] == A*X[:,k] + B*U[:,k] + Bg+ Bd*self.Fd]	
 
 		# State Constraints
 		constraints += [X[:,0] == self.x0] # Initial Constraint
@@ -146,6 +153,7 @@ class MPCcontroller():
 		self.observe_Fd(x0)
 
 		self.x0.value = x0.flatten()
+		print(self.X[8,-1].value)
 
 		#self.problem.solve()
 		self.problem.solve(solver=cvx.CVXOPT)
@@ -166,20 +174,45 @@ class MPCcontroller():
 	def change_xbar(self, xbar_new):
 		self.xbar.value = xbar_new.flatten()
 
+	def change_ubar(self, ubar_new):
+		self.ubar.value = ubar_new.flatten()
+
 	def observe_Fd(self,x):
 		if self.U[:,0].value is None:
 			return
 
-		yk = self.X[:,1].value.reshape((12,1))
+		#xhat = self.X[:,1].value.reshape((12,1))
 
 		self.x_obs = np.dot(self.A_obs,self.x_obs) + \
 					 np.dot(self.B_obs,self.U[:,0].value.reshape((4,1))) + \
-					 self.Bd_obs + \
-					 self.L_obs.dot(x.reshape((12,1)) - yk)
+					 self.Bg_obs - \
+					 self.L_obs.dot(self.x_obs[0:12] - x.reshape((12,1)))
+
+		dhat = self.x_obs[12:15]
+		self.Fd.value = dhat.flatten()
+
+		print('Fd is observed')
+		print(self.Fd.value)
+
+		# solve for xtrack and utrack
+		xtut = cvx.Variable((16,1)) # xt stacked on ut
+		J = cvx.quad_form(xtut[12:16],self.R)
+		constraints = [self.A_track*xtut + np.block([[self.Bg.reshape((12,1))],[np.zeros((3,1))]]) == np.block([[-self.Bd.dot(dhat)],[self.r]])]
+		problem = cvx.Problem(cvx.Minimize(J),constraints)
+		problem.solve()
+
+		xt = xtut[0:12].value
+		ut = xtut[12:16].value
+
+		print('x')
+		print(self.X[6:8,0].value)
+		print(xtut[6:8].value)
+
+		self.change_xbar(xt)
+		self.change_ubar(ut)
 
 		self.Fd.value = self.x_obs[12:15].flatten()
-		print('Fd Disturbance')
-		print(self.Fd.value)
+
 		return
 		
 

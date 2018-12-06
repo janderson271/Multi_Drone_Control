@@ -3,12 +3,11 @@
 		<rosparam param="x0">[0,0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
-	<!--
+	
 	<node name="drone_2" pkg="drone_simulator" type="drone.py">
 		<rosparam param="x0">[-1,-1,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
-	-->
 
 	<node pkg="drone_controller" type="controller.py" name="controller_1" output="screen">
 		<param name="drone" type="str" value="drone_1"/>
@@ -17,12 +16,12 @@
 		<rosparam param="P">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
 		<rosparam param="Q">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
-		<rosparam param="xbar">[7,6,2,0,0,0,0,0,-0.707,0,0,0]</rosparam>
+		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
 		<rosparam param="x0">[0,0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 	</node>
 	
-	<!-- <node pkg="drone_controller" type="controller.py" name="controller_2" output="screen">
+	<node pkg="drone_controller" type="controller.py" name="controller_2" output="screen">
 		<param name="drone" type="str" value="drone_2"/>
 		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
 		<rosparam param="ts">[0.1]</rosparam>
@@ -32,7 +31,8 @@
 		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
 		<rosparam param="x0">[-1,-1,0,0,0,0,0,0,0,0,0,0]</rosparam>
-	</node> -->
+	</node>
+
 	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
 	<node name="viz" pkg="drone_viz" type="drone.py" />
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
@@ -42,8 +42,12 @@
 		output="screen"
 	/> -->
 
+	<node name="motion_planner" pkg="drone_controller" type="motion_planner.py" output="screen">
+		<param name="num_drones" type="int" value="2"/>
+	</node>
+
 	<node name="god" pkg="drone_simulator" type="god.py" output="screen">
-		<param name="num_drones" type="int" value="1"/>
+		<param name="num_drones" type="int" value="2"/>
 	</node>
 
 </launch>
