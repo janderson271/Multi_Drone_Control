@@ -19,7 +19,7 @@ class MPCcontroller():
 		R = np.diag(R)
 
 		l=0.033
-		m=0.032*0.1
+		m=0.032
 		inertia_xx = 16e-6
 		inertia_yy = inertia_xx
 		inertia_zz = 29e-6
@@ -146,6 +146,7 @@ class MPCcontroller():
 		self.observe_Fd(x0)
 
 		self.x0.value = x0.flatten()
+		print(self.X[8,-1].value)
 
 		#self.problem.solve()
 		self.problem.solve(solver=cvx.CVXOPT)
@@ -178,8 +179,8 @@ class MPCcontroller():
 					 self.L_obs.dot(x.reshape((12,1)) - yk)
 
 		self.Fd.value = self.x_obs[12:15].flatten()
-		print('Fd Disturbance')
-		print(self.Fd.value)
+		# print('Fd Disturbance')
+		# print(self.Fd.value)
 		return
 		
 

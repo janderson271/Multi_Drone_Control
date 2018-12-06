@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import numpy as np
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Float32MultiArray, Int32
 import ipdb
@@ -33,10 +34,19 @@ def motion_planner():
 
 	timer = Timer()
 	time_sub = rospy.Subscriber("god/time", Int32, timer.timer_callback)
+	pts = np.zeros((12,3))
+	pts[0,0] = 2
+	pts[2,:] = 2
+	pts[0,1] = 2
+	pts[1,1] = 2
+	pts[0,2] = 0
+	pts[1,2] = 2
 
 	drones = set_pub_sub(num_drones)
 	for drone in drones:
+		drone.Xref = pts
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
+
 
 	while not rospy.is_shutdown():
 		if timer.global_time >= timer.time:
@@ -66,18 +76,18 @@ class Tracker:
 		self.Xref[0:3] = np.ones((3,1))
 
 	def pub_next_waypoint(self):
-		xbar = self.Xref[:, self.max_index]
+		xbar = self.Xref[:, self.max_reached]
 		curr_closeness = np.linalg.norm(xbar[:3] - self.x[:3])
 		thresh = 0.1
-		if curr_closeness < thresh and self.max_index + 1 != self.Xref.shape[1]: 
-			self.max_index += 1
-		xbar = self.Xref[:, self.max_index]
+		if curr_closeness < thresh and self.max_reached + 1 != self.Xref.shape[1]: 
+			self.max_reached += 1
+		xbar = self.Xref[:, self.max_reached]
 		msg = Float32MultiArray()
-		msg.data = xbar[0:6]
-		self.pub(msg)
+		msg.data = xbar
+		self.pub.publish(msg)
 
-	def state_callback(self, msg):
-		self.msg = msg
+	def state_callback(self, pos_msg):
+		self.msg = pos_msg
 		self.x[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z])
 		self.x[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, \
 									   		     pos_msg.orientation.y, \
