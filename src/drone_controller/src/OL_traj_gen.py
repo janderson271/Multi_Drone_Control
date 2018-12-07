@@ -4,6 +4,7 @@ import cvxpy as cvx
 class OL_traj_gen():
 
 	def __init__(self):
+		trajGen = True
 			
 	def solve_cftoc(self, xf_v = np.zeros((12,1)), 
 							 ul=np.zeros((4,1)).flatten(), 

@@ -96,7 +96,7 @@ class Drone:
 		Fg = np.array([[0], [0], [-self.mass * g]])
 		Ft = np.array([[0], [0], [np.sum(self.u)]])
 		
-		Fs = Fg + self.Fext + self.toGlobal(Ft).reshape(3,1) 
+		Fs = Fg + self.Fext.reshape(3,1) + self.toGlobal(Ft).reshape(3,1) 
 		
 
 		Mz = np.array([0,0, self.k * (self.u[0] - self.u[1] + self.u[2] - self.u[3])]) 
@@ -120,9 +120,9 @@ class Drone:
 		self.x[9:] = self.x[9:] + a_ang * self.dt
 
 		# Enforce that the ground exists
-		self.x[2] = np.max(self.x[2], 0)
+		self.x[2] = np.max([self.x[2], 0])
 		if self.x[2] == 0:
-			self.x[8] = np.max(self.x[8], 0)
+			self.x[8] = np.max([self.x[8], 0])
 
 		# return messages
 		position = self.get_pose()

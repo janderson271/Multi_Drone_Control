@@ -38,6 +38,7 @@ def control():
 														np.array(params['x0'])     ))
 
 	control_pub = rospy.Publisher(drone_name + "/control", Float32MultiArray, queue_size = 1)
+	waypoint_sub = rospy.Subscriber(drone_name + "/waypoint", Float32MultiArray, droneController.waypoint_callback)
 	pos_sub = rospy.Subscriber(drone_name + "/position", Pose, droneController.pos_callback)
 	vel_sub = rospy.Subscriber(drone_name + "/velocity", Twist, droneController.vel_callback)
 	time_sub = rospy.Subscriber("god/time", Int32, droneController.timer_callback)
@@ -102,6 +103,10 @@ class DroneController:
 
 	def external_callback(self,external_msg):
 		self.Fext = self.vectornp(external_msg.force)
+
+	def waypoint_callback(self, waypoint_msg):
+		self.controller.change_xbar(np.array(waypoint_msg.data))
+
 	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
 
 	def timer_callback(self, time_msg):
