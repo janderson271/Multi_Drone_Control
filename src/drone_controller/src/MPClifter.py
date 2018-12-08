@@ -79,7 +79,7 @@ class MPCcontroller():
 		self.B_obs = np.block([[B],[np.zeros((3,4))]])
 		self.Bg_obs = np.block([[Bg.reshape((12,1))],[np.zeros((3,1))]])
 		self.C_obs = np.block([[C,Cd]])
-		poles = np.array([93.,94,95,96,97,98,99,100,101,102,103,104,105,106,107])/150
+		poles = np.array([93.,94,95,96,97,98,99,100,101,102,103,104,105,106,107])/130
 		sys = scipy.signal.place_poles(self.A_obs.transpose(),self.C_obs.transpose(),poles)
 		self.L_obs = sys.gain_matrix.transpose()
 		self.R = R
@@ -125,7 +125,7 @@ class MPCcontroller():
 
 		# State Constraints
 		constraints += [X[:,0] == self.x0] # Initial Constraint
-		for k in range(4,n):
+		for k in range(1,n):
 			for i in range(nx):
 				if xl[i] is not None:
 					constraints += [xl[i] <= X[i,k]]
@@ -153,10 +153,8 @@ class MPCcontroller():
 		self.observe_Fd(x0)
 
 		self.x0.value = x0.flatten()
-		print(self.X[8,-1].value)
 
-		#self.problem.solve()
-		self.problem.solve(solver=cvx.CVXOPT)
+		self.problem.solve()
 
 		if self.problem.status == "optimal":
 			if self.counter != 1:
@@ -181,8 +179,6 @@ class MPCcontroller():
 		if self.U[:,0].value is None:
 			return
 
-		#xhat = self.X[:,1].value.reshape((12,1))
-
 		self.x_obs = np.dot(self.A_obs,self.x_obs) + \
 					 np.dot(self.B_obs,self.U[:,0].value.reshape((4,1))) + \
 					 self.Bg_obs - \
@@ -190,8 +186,6 @@ class MPCcontroller():
 
 		dhat = self.x_obs[12:15]
 		self.Fd.value = dhat.flatten()
-
-		print('Fd is observed')
 		print(self.Fd.value)
 
 		# solve for xtrack and utrack
@@ -203,10 +197,6 @@ class MPCcontroller():
 
 		xt = xtut[0:12].value
 		ut = xtut[12:16].value
-
-		print('x')
-		print(self.X[6:8,0].value)
-		print(xtut[6:8].value)
 
 		self.change_xbar(xt)
 		self.change_ubar(ut)
