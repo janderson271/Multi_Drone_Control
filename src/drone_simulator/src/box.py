@@ -41,12 +41,12 @@ def sim():
 	# initialize box
 	box = Box(**params)
 	# box = Box()
-	drone_node_names = rosnode.get_node_names()
+	node_names = rosnode.get_node_names()
 
-	box.num_drones = len(drone_node_names)
+	box.num_drones = sum(1 for i in node_names if i.startswith('/drone'))
 
 	# get drone positions
-	for drone_node in drone_node_names:
+	for drone_node in node_names:
 		if drone_node.startswith('/drone'):
 			rospy.Subscriber(drone_node + '/position', Pose, box.drone_callback)
 
@@ -62,7 +62,7 @@ def sim():
 			for i in range(0, len(forces)):
 				# Fext = box.toDrone(forces[i], box.drone_orientations[i])
 				Fext = forces[i]
-				force_pub = rospy.Publisher(drone_node_names[i] + '/external_force', Wrench, queue_size=1)
+				force_pub = rospy.Publisher(node_names[i] + '/external_force', Wrench, queue_size=1)
 				force_pub.publish(Fext)
 			# publish box position
 			box_pos_pub = rospy.Publisher('box/position', Pose, queue_size=1)
