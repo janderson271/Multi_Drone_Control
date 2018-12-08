@@ -148,7 +148,7 @@ class Box:
 		self.vel = self.vel + accel * self.dt
 
 		# enforce ground
-		self.pos[2] = np.max([self.pos[2], 0])
+		# self.pos[2] = np.max([self.pos[2], 0])
 
 		# return forces, new box position
 		self.time += 1
