@@ -4,6 +4,7 @@ import rospy
 import rosnode
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose, Twist, Vector3, Point
+from std_msgs.msg import Float32MultiArray, Int32
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 def callback(msg, args):
@@ -14,7 +15,7 @@ def drone_viz():
 	rospy.init_node("viz")
 	drones = []
 	position_dict = {}
-	waypoint_dict = {}
+	waypoints_dict = {}
 	pub_dict = {}
 	rate = rospy.Rate(10)
 	pub = rospy.Publisher("viz/drone_markers", MarkerArray, queue_size=1)
@@ -31,7 +32,7 @@ def drone_viz():
 			if node.startswith("drone") and node not in drones:
 				drones.append(node)
 				rospy.Subscriber("/" + node + "/position", Pose, callback, (node, position_dict))
-				rospy.Subscriber("/" + node + "/waypoint", Point, callback, (node, waypoint_dict))
+				rospy.Subscriber("/" + node + "/waypoint", Float32MultiArray, callback, (node, waypoints_dict))
 		t, lifetime = rospy.Time.now(), rospy.Duration()
 		for i, drone in enumerate(drones):
 			if drone not in position_dict: continue
@@ -45,7 +46,7 @@ def drone_viz():
 				marker.type = Marker.MESH_RESOURCE
 				marker.mesh_resource = "package://drone_viz/src/drone.stl"
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.01,0.01,0.01)
+				marker.scale = Vector3(0.005,0.005,0.005)
 				marker.color.g = 0.5
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -71,7 +72,7 @@ def drone_viz():
 			marker.pose.orientation.w = quat[3]
 
 			#waypoint 
-			if drone not in waypoint_dict: continue
+			if drone not in waypoints_dict: continue
 			if drone not in waypoints:
 				waypoints[drone] = Marker()
 				marker = waypoints[drone]
@@ -79,7 +80,7 @@ def drone_viz():
 				marker.id = global_id
 				global_id += 1
 				marker.header.stamp = t
-				marker.type = Marker.POINT
+				marker.type = Marker.POINTS
 				marker.action = Marker.ADD
 				marker.scale = Vector3(0.1,0.1,0.1)
 				marker.color.r = 1
@@ -87,8 +88,13 @@ def drone_viz():
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
 			marker = waypoints[drone]
-			if marker.points[-1] != waypoints_dict[drone]:
-				marker.points.append(waypoints_dict[drone])
+
+			if len(marker.points) == 0 or marker.points[-1] != waypoints_dict[drone]:
+				p = Point()
+				p.x = waypoints_dict[drone].data[0]
+				p.y = waypoints_dict[drone].data[1]
+				p.z = waypoints_dict[drone].data[2]
+				marker.points.append(p)
 
 			#trajectories
 			if drone not in trajectories:
@@ -106,8 +112,9 @@ def drone_viz():
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
 			marker = trajectories[drone]
-			if marker.points[-1] != waypoints_dict[drone]:
-				marker.points.append(waypoints_dict[drone])
+			if len(marker.points) == 0 or marker.points[-1] != waypoints_dict[drone]:
+				# marker.points.append(waypoints_dict[drone])
+				pass
 
 		pub.publish(marker_array)
 		rate.sleep()
