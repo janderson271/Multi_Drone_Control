@@ -135,7 +135,7 @@ class Box:
 			forces += [F]	
 
 		# all forces
-		c = 0.1
+		c = 0
 		Fs = Fg + Fd - c*damping
 
 		# acceleration
@@ -157,6 +157,10 @@ class Box:
 		pose.position.x = self.pos[0]
 		pose.position.y = self.pos[1]
 		pose.position.z = self.pos[2]
+		pose.orientation.x = 0
+		pose.orientation.y = 0
+		pose.orientation.z = 0
+		pose.orientation.w = 1
 		return pose
 
 	def vectornp(self, msg): 
