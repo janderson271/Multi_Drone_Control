@@ -34,19 +34,24 @@ def motion_planner():
 
 	timer = Timer()
 	time_sub = rospy.Subscriber("god/time", Int32, timer.timer_callback)
-	pts = np.zeros((12,3))
-	pts[0,0] = 2
-	pts[2,:] = 2
-	pts[0,1] = 2
-	pts[1,1] = 2
-	pts[0,2] = 0
-	pts[1,2] = 2
+	nominal_traj = np.zeros((12,3))
+	nominal_traj[0,0] = 2
+	nominal_traj[2,:] = 2
+	nominal_traj[0,1] = 2
+	nominal_traj[1,1] = 2
+	nominal_traj[0,2] = 0
+	nominal_traj[1,2] = 2
 
 	drones = set_pub_sub(num_drones)
 	for drone in drones:
-		drone.Xref = pts
+		drone.Xref = np.copy(nominal_traj)
+		if drone.name == "drone_2":
+			drone.Xref[0,:] += -1
+			drone.Xref[1,:] += 1
+		elif drone.name == "drone_3":
+			drone.Xref[0,:] += 1
+			drone.Xref[1,:] += 1
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
-
 
 	while not rospy.is_shutdown():
 		if timer.global_time >= timer.time:
