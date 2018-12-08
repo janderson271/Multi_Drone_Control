@@ -69,4 +69,7 @@
 		<param name="num_drones" type="int" value="3"/>
 	</node>
 
+	<node name="box" pkg="drone_simulator" type="box.py" output="screen">
+	</node>
+
 </launch>

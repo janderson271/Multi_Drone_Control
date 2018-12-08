@@ -46,7 +46,7 @@ def drone_viz():
 				marker.header.stamp = t
 				marker.type = Marker.CUBE
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.2,0.2,0.2)
+				marker.scale = Vector3(0.1,0.1,0.1)
 				marker.color.b = 0.5
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -66,7 +66,7 @@ def drone_viz():
 				marker.type = Marker.MESH_RESOURCE
 				marker.mesh_resource = "package://drone_viz/src/drone.stl"
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.005,0.005,0.005)
+				marker.scale = Vector3(0.0025,0.0025,0.0025)
 				marker.color.g = 0.5
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -102,7 +102,7 @@ def drone_viz():
 				marker.header.stamp = t
 				marker.type = Marker.POINTS
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.1,0.1,0.1)
+				marker.scale = Vector3(0.05,0.05,0.05)
 				marker.color.r = 1
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -126,7 +126,7 @@ def drone_viz():
 				marker.header.stamp = t
 				marker.type = Marker.LINE_STRIP
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.1,0.1,0.1)
+				marker.scale = Vector3(0.05,0.05,0.05)
 				marker.color.b = 1
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -147,16 +147,16 @@ def drone_viz():
 					marker.header.stamp = t
 					marker.type = Marker.LINE_STRIP
 					marker.action = Marker.ADD
-					marker.scale = Vector3(0.2,0.2,0.2)
+					marker.scale = Vector3(0.02,0.02,0.02)
 					marker.color.r = 1
 					marker.color.a = 1.0
 					marker.lifetime = lifetime
 					marker_array.markers.append(marker)
 				marker = markers[marker_name]
 				drone_pos = position_dict[drone]
-				drone_point = Point(drone_pos.x, drone_pos.y, drone_pos.z)
+				drone_point = Point(drone_pos.position.x, drone_pos.position.y, drone_pos.position.z)
 				box_pos = position_dict[BOX]
-				box_point = Point(box_pos.x, box_pos.y, box_pos.z)
+				box_point = Point(box_pos.position.x, box_pos.position.y, box_pos.position.z)
 				marker.points = [drone_point, box_point]
 				
 

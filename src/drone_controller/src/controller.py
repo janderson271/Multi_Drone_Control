@@ -105,7 +105,7 @@ class DroneController:
 		self.Fext = self.vectornp(external_msg.force)
 
 	def waypoint_callback(self, waypoint_msg):
-		self.controller.r = np.array(waypoint_msg.data[0:3])
+		self.controller.r = np.array(waypoint_msg.data[0:3]).reshape((3,1))
 
 	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
 

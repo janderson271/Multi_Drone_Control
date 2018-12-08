@@ -186,7 +186,6 @@ class MPCcontroller():
 
 		dhat = self.x_obs[12:15]
 		self.Fd.value = dhat.flatten()
-		print(self.Fd.value)
 
 		# solve for xtrack and utrack
 		xtut = cvx.Variable((16,1)) # xt stacked on ut
