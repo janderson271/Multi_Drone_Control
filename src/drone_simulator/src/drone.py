@@ -79,7 +79,6 @@ class Drone:
 		self.time = 0
 		self.global_time = 0
 
-
 	def sim_step(self):
 		"""
 		self.u = 4x1 np array [FL, FR, RL, RR]
@@ -90,13 +89,13 @@ class Drone:
 		x_subset = x, y, z, roll, pitch, yaw
 		x = x_subset, d(x_subset)/dt 
 		""" 
-		
+		self.last = self.x.copy()
+
 		# Calculate Forces and moments
 		g = 9.81
 		Fg = np.array([[0], [0], [-self.mass * g]])
 		Ft = np.array([[0], [0], [np.sum(self.u)]])
-		
-		Fs = Fg + self.Fext.reshape(3,1) + self.toGlobal(Ft).reshape(3,1) 
+		Fs = Fg + self.Fext.reshape(3,1) + self.toGlobal(Ft).reshape(3,1)
 		
 
 		Mz = np.array([0,0, self.k * (self.u[0] - self.u[1] + self.u[2] - self.u[3])]) 
@@ -113,11 +112,10 @@ class Drone:
 		# Calculate accelerations
 		a_lin = (1 / self.mass) * Fs
 		a_ang = np.dot(np.linalg.inv(self.inertia), (M - np.cross(self.x[9:].T, np.dot(self.inertia, self.x[9:]).T)).T)
-
 		# advance dynamics
 		self.x[0:6] = self.x[0:6] + self.x[6:] * self.dt
 		self.x[6:9] = self.x[6:9] + a_lin * self.dt
-		self.x[9:] = self.x[9:] + a_ang * self.dt
+		self.x[9:] = self.x[9:] + self.toGlobal(a_ang) * self.dt
 
 		# Enforce that the ground exists
 		self.x[2] = np.max([self.x[2], 0])
@@ -134,7 +132,7 @@ class Drone:
 
 	def get_pose(self):
 		position = self.x[0:3]
-		orientation = quaternion_from_euler(self.x[3], self.x[4], self.x[5])
+		orientation = quaternion_from_euler(self.x[3][0], self.x[4][0], self.x[5][0])
 		pose = Pose()
 		pose.position.x = position[0]
 		pose.position.y = position[1]
@@ -169,9 +167,9 @@ class Drone:
 	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
 
 	def toLocal(self, vector):
-		wx = self.x[3] # roll
-		wy = self.x[4] # pitch
-		wz = self.x[5] # yaw
+		wx = self.x[3][0] # roll
+		wy = self.x[4][0] # pitch
+		wz = self.x[5][0] # yaw
 		Rx = np.array([[1, 0, 0],[0, np.cos(wx), -np.sin(wx)],[0, np.sin(wx), np.cos(wx)]])
 		Ry = np.array([[np.cos(wy), 0, np.sin(wy)],[0, 1, 0],[-np.sin(wy), 0, np.cos(wy)]])
 		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])
@@ -180,9 +178,9 @@ class Drone:
 
 
 	def toGlobal(self, vector):
-		wx = self.x[3] # roll
-		wy = self.x[4] # pitch
-		wz = self.x[5] # yaw
+		wx = self.x[3][0] # roll
+		wy = self.x[4][0] # pitch
+		wz = self.x[5][0] # yaw
 		Rx = np.array([[1, 0, 0],[0, np.cos(wx), -np.sin(wx)],[0, np.sin(wx), np.cos(wx)]])
 		Ry = np.array([[np.cos(wy), 0, np.sin(wy)],[0, 1, 0],[-np.sin(wy), 0, np.cos(wy)]])
 		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])

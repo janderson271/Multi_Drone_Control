@@ -45,18 +45,16 @@ def control():
 	rate = rospy.Rate(10)
 	control_input = Float32MultiArray()
 
-	plt.figure()
+	# plt.figure()
 	
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
 			uOpt = droneController.calc_actuation()
-			#print('uOpt is')
-			#print(uOpt)
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)
-				droneController.plot_things()
-				plt.pause(.01)
+				# droneController.plot_things()
+				# plt.pause(.01)
 		rate.sleep()
 
 class DroneController:
@@ -92,10 +90,12 @@ class DroneController:
 
 	def pos_callback(self,pos_msg):
 		self.x[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z])
-		self.x[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, \
-									   		     pos_msg.orientation.y, \
-												 pos_msg.orientation.z, \
-												 pos_msg.orientation.w]))
+		self.x[6:9] = np.array(euler_from_quaternion([
+													pos_msg.orientation.x, 
+									   		        pos_msg.orientation.y, 
+												    pos_msg.orientation.z, 
+												    pos_msg.orientation.w
+												    ]))
 
 	def vel_callback(self,vel_msg):
 		self.x[3:6] = np.array([vel_msg.linear.x, vel_msg.linear.y, vel_msg.linear.z])
@@ -105,7 +105,7 @@ class DroneController:
 		self.Fext = self.vectornp(external_msg.force)
 
 	def waypoint_callback(self, waypoint_msg):
-		self.controller.change_xbar(np.array(waypoint_msg.data))
+		self.controller.r = np.array(waypoint_msg.data[0:3])
 
 	def vectornp(self, msg): return np.array([msg.x, msg.y, msg.z]) 
 
