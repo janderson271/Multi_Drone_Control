@@ -36,6 +36,7 @@ def sim():
 	params['v0'] = np.array(params['v0'], dtype=np.float64).flatten()
 	
 	box = Box(**params)
+	print(np.array(params['x0'], dtype=np.float64).flatten())
 	node_names = rosnode.get_node_names()
 	drone_node_names = []
 
@@ -100,7 +101,7 @@ class Box:
 		# forces on box
 		Fg = np.array([0, 0, -self.mass*9.81]) 	
 		Fs = np.zeros(3)
-		Fd = self.c * (((self.pos + self.vel * self.dt) - self.pos)/self.dt)
+		Fd = self.c * self.vel
 		forces = []
 
 		# "spring" forces
