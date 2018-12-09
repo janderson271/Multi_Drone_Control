@@ -72,7 +72,7 @@ class Box:
 		self.rope_length = rope_length				# length of "ropes" [m]
 		self.mass = mass							# mass of box [kg]
 		self.dt = dt 								# time step [s]
-		self.pos = np.array([0, 0.1, 0]) 			# starting position (x,y,z) [m]
+		self.pos = x0					 			# starting position (x,y,z) [m]
 		self.vel = v0 								# current velocity (vx,vy,vz) [m/s]
 		self.drone_positions = [] 					# list of drone positions 
 		self.time = 0 								# box time 
