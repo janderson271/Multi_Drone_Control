@@ -70,8 +70,6 @@
 	</node>
 
 	<node name="box" pkg="drone_simulator" type="box.py" output="screen">
-		<rosparam param="rope_length">1</rosparam>
-		<rosparam param="mass">0.01</rosparam>
 		<rosparam param="x0">[0,0.1,0]</rosparam>
 	</node>
 

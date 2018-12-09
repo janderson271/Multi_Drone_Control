@@ -32,8 +32,8 @@ def sim():
 
 	params_dict = dict(rope_length=1, mass=0.01, dt=0.1, x0=[0.]*3, v0=[0.]*3)
 	params = get_and_set_params(node_name, params_dict)
-	params['x0'] = np.array(params['x0'], dtype=np.float64)
-	params['v0'] = np.array(params['v0'], dtype=np.float64)
+	params['x0'] = np.array(params['x0'], dtype=np.float64).flatten()
+	params['v0'] = np.array(params['v0'], dtype=np.float64).flatten()
 	
 	box = Box(**params)
 	node_names = rosnode.get_node_names()
