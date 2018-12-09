@@ -6,9 +6,6 @@ import ipdb
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Pose, Wrench, Vector3
 
-def skew(x):
-	return np.array([[0, -x[2], x[1]], [x[2], 0, x[0]], [x[1], x[0], 0]])
-
 def get_and_set_params(node_name, params):
 	# params is a dict from param_name -> default_value, None if no default value
 	vals = {}
@@ -33,14 +30,12 @@ def sim():
 	node_name = 'box'
 	rospy.init_node(node_name)
 
-	params_dict = dict(rope_length=1, mass=0.03, dt=0.1, x0=[0.]*3, v0=[0.]*3)
+	params_dict = dict(rope_length=1, mass=0.01, dt=0.1, x0=[0.]*3, v0=[0.]*3)
 	params = get_and_set_params(node_name, params_dict)
-	params['x0'] = np.array(params['x0'], dtype=np.float64).reshape((1,3))
-	params['v0'] = np.array(params['v0'], dtype=np.float64).reshape((1,3))
+	params['x0'] = np.array(params['x0'], dtype=np.float64)
+	params['v0'] = np.array(params['v0'], dtype=np.float64)
 	
-	# initialize box
 	box = Box(**params)
-	# box = Box()
 	node_names = rosnode.get_node_names()
 	drone_node_names = []
 
@@ -55,18 +50,15 @@ def sim():
 	# get time
 	time_sub = rospy.Subscriber('god/time', Int32, box.timer_callback)
 
-
+	# sim
 	rate = rospy.Rate(1/box.dt)
 	while not rospy.is_shutdown():
 		if box.global_time > box.time:
 			forces, position = box.sim_step()
-			# publish Fext
 			for i in range(0, len(forces)):
-				# Fext = box.toDrone(forces[i], box.drone_orientations[i])
 				Fext = forces[i]
 				force_pub = rospy.Publisher(drone_node_names[i] + '/external_force', Wrench, queue_size=1)
 				force_pub.publish(Fext)
-			# publish box position
 			box_pos_pub = rospy.Publisher('box/position', Pose, queue_size=1)
 			box_pos_pub.publish(position)
 
@@ -76,19 +68,18 @@ def sim():
 
 class Box:  
 
-	def __init__(self, rope_length=1, mass=0.03, dt = 0.1, x0=np.zeros((1,3)), v0=np.ones((1,3))):
-		self.rope_length = rope_length
-		self.mass = mass
-		self.dt = dt
-		self.pos = x0.T
-		self.vel = v0.T
-		self.drone_positions = []
-		self.drone_orientations = []
-		self.time = 0
-		self.global_time = 0
-		self.num_drones = 0
-		self.k = 0.1
-		self.x_last = 0
+	def __init__(self, rope_length=1, mass=0.01, dt = 0.1, x0=np.array([0, 0.5, 0]), v0=np.ones(3)):
+		self.rope_length = rope_length				# length of "ropes" [m]
+		self.mass = mass							# mass of box [kg]
+		self.dt = dt 								# time step [s]
+		self.pos = np.array([0, 0.1, 0]) 			# starting position (x,y,z) [m]
+		self.vel = v0 								# current velocity (vx,vy,vz) [m/s]
+		self.drone_positions = [] 					# list of drone positions 
+		self.time = 0 								# box time 
+		self.global_time = 0 					    # global time
+		self.num_drones = 0 						# number of drones
+		self.k = 0.3 								# spring constant
+		self.c = 0.05 								# damping constant
 
 	def reset(self):
 		self.drone_positions = []
@@ -101,54 +92,46 @@ class Box:
 			where wrench_i.force.x = fext_x on drone_i, in drone_i frame
 		'''
 
+		# no drone positions
 		if self.drone_positions == []:
 			self.time += 1
 			return [Wrench()]*self.num_drones, self.get_pose()
 
 		# forces on box
-		Fg = np.array([[0, 0, -self.mass*9.81]]).T
-		# ipdb.set_trace()
-		sum_z = sum((row[2] - self.pos[2]) for row in self.drone_positions if np.linalg.norm(self.pos - row)>=self.rope_length)
-		if sum_z == 0:
-			self.time += 1
-			return [Wrench()]*self.num_drones, self.get_pose()
-
-		T = -Fg[2]/sum_z
-		Fd = np.zeros((1,3)).T
+		Fg = np.array([0, 0, -self.mass*9.81]) 	
+		Fs = np.zeros(3)
+		Fd = self.c * (((self.pos + self.vel * self.dt) - self.pos)/self.dt)
 		forces = []
 
+		# "spring" forces
 		for drone_pos in self.drone_positions:
-			F = Wrench()
+			W = Wrench()
 			# drone not supporting box
 			if np.linalg.norm(self.pos - drone_pos) < self.rope_length:
-				F.force.x = 0
-				F.force.y = 0
-				F.force.z = 0
+				W.force.x = 0
+				W.force.y = 0
+				W.force.z = 0
 			# drone supporting box
 			else:
-				# f = T*(self.pos - drone_pos) #/np.linalg.norm(self.pos - drone_pos)
 				f = -self.k * (np.linalg.norm(self.pos - drone_pos) - self.rope_length) * (self.pos - drone_pos) / np.linalg.norm(self.pos - drone_pos)
-				damping = (np.linalg.norm(self.pos - drone_pos) - self.x_last)/self.dt
-				self.x_last = np.linalg.norm(self.pos - drone_pos)
-				F.force.x = -f[0]
-				F.force.y = -f[1]
-				F.force.z = -f[2]
-				Fd += f
-			forces += [F]	
+				W.force.x = -f[0]
+				W.force.y = -f[1]
+				W.force.z = -f[2]
+				Fs += f
+			forces += [W]	
 
-		# all forces
-		c = 0
-		Fs = Fg + Fd - c*damping
+		# total force
+		F = Fg + Fs - Fd
 
 		# acceleration
-		accel = Fs / self.mass	
+		accel = F / self.mass	
 
 		# step forward position, velocity
 		self.pos = self.pos + self.vel * self.dt
 		self.vel = self.vel + accel * self.dt
 
 		# enforce ground
-		# self.pos[2] = np.max([self.pos[2], 0])
+		self.pos[2] = np.max([self.pos[2], 0])
 
 		# return forces, new box position
 		self.time += 1
@@ -166,7 +149,7 @@ class Box:
 		return pose
 
 	def vectornp(self, msg): 
-		return np.array([[msg.x, msg.y, msg.z]]).T
+		return np.array([msg.x, msg.y, msg.z])
 
 	def npvector(self, msg):
 		return Vector3(msg[0], msg[1], msg[2])
@@ -174,24 +157,10 @@ class Box:
 	def drone_callback(self, position_msg):
 		if len(self.drone_positions) == self.num_drones:
 			self.drone_positions = []
-			self.drone_orientations = []
-
 		self.drone_positions += [self.vectornp(position_msg.position)]
-		self.drone_orientations += [position_msg.orientation]
 
 	def timer_callback(self, time_msg):
 		self.global_time = time_msg.data
-
-	def toDrone(self, v, p):
-		# convert vector v to coordinates of drone with quaternion p
-		q0 = p.w;
-		qv = self.vectornp(p)
-		f = self.vectornp(v.force)
-		T = q0*q0*np.eye(3) - (qv.T*qv).dot(np.eye(3)) + 2*(qv*qv.T) - 2*q0*skew(qv)
-		w = Wrench()
-		w.force = self.npvector(T.dot(f))
-		return w
-
 
 if __name__ == '__main__':
     try:
