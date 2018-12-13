@@ -40,9 +40,13 @@ def sim():
 	node_names = rosnode.get_node_names()
 	drone_node_names = []
 
-	box.num_drones = sum(1 for i in node_names if i.startswith('/drone'))
+	node_name = rospy.get_name()
+	num_drones = rospy.get_param(node_name + "/num_drones")
+
+	box.num_drones = num_drones #sum(1 for i in node_names if i.startswith('/drone'))
 
 	# get drone positions
+	node_names = ["/drone_{}".format(i+1) for i in range(num_drones)]
 	for drone_node in node_names:
 		if drone_node.startswith('/drone'):
 			rospy.Subscriber(drone_node + '/position', Pose, box.drone_callback)
@@ -54,6 +58,7 @@ def sim():
 	# sim
 	rate = rospy.Rate(1/box.dt)
 	while not rospy.is_shutdown():
+		#import ipdb; ipdb.set_trace()
 		if box.global_time > box.time:
 			forces, position = box.sim_step()
 			for i in range(0, len(forces)):

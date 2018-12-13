@@ -55,7 +55,7 @@
 	<node name="viz" pkg="drone_viz" type="drone.py" />
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
-	<!-- <node name="record_viz" pkg="rosbag" type="record" 
+	 <!--<node name="record_viz" pkg="rosbag" type="record" 
 		args="-O ./viz/ /viz/drone_markers"
 		if="$(arg record_viz)"
 		output="screen"
@@ -71,6 +71,7 @@
 
 	<node name="box" pkg="drone_simulator" type="box.py" output="screen">
 		<rosparam param="x0">[0,0.1,0]</rosparam>
+		<param name="num_drones" type="int" value="3"/>
 	</node>
 
 </launch>
