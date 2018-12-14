@@ -49,6 +49,8 @@ def motion_planner():
 		for i in range(2):
 			if (nominal_traj[1,i+1] - nominal_traj[1,i]) == 0:
 				t = 0
+			elif i == 0:
+				t = 0
 			else:
 				t = np.arctan((nominal_traj[0,i+1] - nominal_traj[0,i])/(nominal_traj[1,i+1] - nominal_traj[1,i]))
 			R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
