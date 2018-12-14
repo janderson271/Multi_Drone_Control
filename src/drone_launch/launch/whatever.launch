@@ -1,0 +1,79 @@
+<launch>
+	<node name="drone_1" pkg="drone_simulator" type="drone.py" output="screen">
+		<rosparam param="x0">[0,0.2598,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
+	</node>
+
+	<node pkg="drone_controller" type="controller.py" name="controller_1" output="screen">
+		<param name="drone" type="str" value="drone_1"/>
+		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
+		<rosparam param="ts">[0.1]</rosparam>
+		<rosparam param="P">[1.,1,1.,1,1.,1,1.,1,1,1,1,1]</rosparam>
+		<rosparam param="Q">[1.,1,.1,1.,1,.1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="R">[1.,1.,1.,1.]</rosparam>
+		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="ubar">[0,0,0,0]</rosparam>
+		<rosparam param="x0">[0,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
+	</node>
+
+	<node name="drone_2" pkg="drone_simulator" type="drone.py" output="screen">
+		<rosparam param="x0">[0,0.2598,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
+	</node>
+
+	<node pkg="drone_controller" type="controller.py" name="controller_2" output="screen">
+		<param name="drone" type="str" value="drone_2"/>
+		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
+		<rosparam param="ts">[0.1]</rosparam>
+		<rosparam param="P">[1.,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="Q">[1.,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="R">[1.,1,1,1]</rosparam>
+		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="ubar">[0,0,0,0]</rosparam>
+		<rosparam param="x0">[0,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
+	</node>
+
+	<!-- <node name="drone_3" pkg="drone_simulator" type="drone.py" output="screen">
+		<rosparam param="x0">[0,0.2598,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
+	</node>
+
+	<node pkg="drone_controller" type="controller.py" name="controller_3" output="screen">
+		<param name="drone" type="str" value="drone_3"/>
+		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
+		<rosparam param="ts">[0.1]</rosparam>
+		<rosparam param="P">[1.,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="Q">[1.,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="R">[1.,1,1,1]</rosparam>
+		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="ubar">[0,0,0,0]</rosparam>
+		<rosparam param="x0">[0,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
+	</node> -->
+
+
+	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
+
+	<node name="viz" pkg="drone_viz" type="drone.py" />
+
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
+	 <!--<node name="record_viz" pkg="rosbag" type="record" 
+		args="-O ./viz/ /viz/drone_markers"
+		if="$(arg record_viz)"
+		output="screen"
+	/> -->
+
+	<!-- <node name="motion_planner" pkg="drone_controller" type="motion_planner.py" output="screen">
+		<param name="num_drones" type="int" value="3"/>
+	</node> -->
+
+	<node name="god" pkg="drone_simulator" type="god.py" output="screen">
+		<param name="num_drones" type="int" value="2"/>
+	</node>
+	<!-- 
+	<node name="box" pkg="drone_simulator" type="box.py" output="screen">
+		<rosparam param="x0">[0,0.13,0]</rosparam>
+		<param name="num_drones" type="int" value="3"/>
+	</node>
+ -->
+
+</launch>
