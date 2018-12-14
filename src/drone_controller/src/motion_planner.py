@@ -35,23 +35,28 @@ def motion_planner():
 	timer = Timer()
 	time_sub = rospy.Subscriber("god/time", Int32, timer.timer_callback)
 	nominal_traj = np.zeros((12,3))
-	nominal_traj[0,0] = 2
+	nominal_traj[0,0] = 0.2
+	nominal_traj[0,1] = 0.4
+	nominal_traj[0,2] = 0.8
+
+	nominal_traj[1,0] = 0.4	
+	nominal_traj[1,1] = 0.4
+	nominal_traj[1,2] = 0.4
 	nominal_traj[2,:] = 2
-	nominal_traj[0,1] = 2
-	nominal_traj[1,1] = 2
-	nominal_traj[0,2] = 0
-	nominal_traj[1,2] = 2
 
 	drones = set_pub_sub(num_drones)
 	for drone in drones:
 		drone.Xref = np.copy(nominal_traj)
-		if drone.name == "drone_2":
-			drone.Xref[0,:] += -0.1
-			drone.Xref[1,:] += 0.17
-		elif drone.name == "drone_3":
-			drone.Xref[0,:] += 0.1
-			drone.Xref[1,:] += 0.17
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
+		for i in range(2):
+			if (nominal_traj[1,i+1] - nominal_traj[1,i]) == 0:
+				t = 0
+			else:
+				t = np.arctan((nominal_traj[0,i+1] - nominal_traj[0,i])/(nominal_traj[1,i+1] - nominal_traj[1,i]))
+			R = np.array([[np.cos(t), -np.cos(t)], [np.sin(t), np.cos(t)]])
+			xnew = R.dot(np.array([[drone.x0[0]], [drone.x0[1]]]))
+			drone.Xref[0,i] += xnew[0][0]
+			drone.Xref[1,i] += xnew[1][0]
 
 	while not rospy.is_shutdown():
 		if timer.global_time >= timer.time:
@@ -73,8 +78,8 @@ class Tracker:
 		self.max_reached = 0
 		self.finished = False
 		self.msg = Pose()
-		self.x0 = np.zeros(12)
-		self.x = np.zeros(12)
+		self.x0 = np.zeros((12,1))
+		self.x = np.zeros((12,1))
 		self.name = name
 		self.pub = rospy.Publisher(name + "/waypoint", Float32MultiArray, queue_size=10)
 		self.sub = rospy.Subscriber(name + "/position", Pose, self.state_callback)
@@ -93,11 +98,11 @@ class Tracker:
 
 	def state_callback(self, pos_msg):
 		self.msg = pos_msg
-		self.x[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z])
+		self.x[0:3] = np.array([pos_msg.position.x, pos_msg.position.y, pos_msg.position.z]).reshape(3,1)
 		self.x[6:9] = np.array(euler_from_quaternion([pos_msg.orientation.x, \
 									   		     pos_msg.orientation.y, \
 												 pos_msg.orientation.z, \
-												 pos_msg.orientation.w]))
+												 pos_msg.orientation.w])).reshape(3,1)
 
     
 if __name__ == "__main__":
