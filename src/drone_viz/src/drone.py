@@ -65,8 +65,9 @@ def drone_viz():
 				marker.header.stamp = t
 				marker.type = Marker.MESH_RESOURCE
 				marker.mesh_resource = "package://drone_viz/src/drone.stl"
-				marker.action = Marker.ADD
-				marker.scale = Vector3(0.0025,0.0025,0.0025)
+				#marker.type = Marker.CYLINDER
+				#marker.action = Marker.ADD
+				marker.scale = Vector3(0.0006,0.0006,0.0006)
 				marker.color.g = 0.5
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -75,7 +76,7 @@ def drone_viz():
 			marker.pose = position_dict[drone]
 			marker.pose = Pose()
 			marker.pose.position.x = position_dict[drone].position.x
-			marker.pose.position.y = position_dict[drone].position.y
+			marker.pose.position.y = position_dict[drone].position.y - 0.04
 			marker.pose.position.z = position_dict[drone].position.z
 			pos_msg = position_dict[drone]
 			euler = np.array(euler_from_quaternion([
@@ -112,7 +113,7 @@ def drone_viz():
 			if len(marker.points) == 0 or marker.points[-1] != waypoints_dict[drone]:
 				p = Point()
 				p.x = waypoints_dict[drone].data[0]
-				p.y = waypoints_dict[drone].data[1]
+				p.y = waypoints_dict[drone].data[1] - 0.04
 				p.z = waypoints_dict[drone].data[2]
 				marker.points.append(p)
 
@@ -126,15 +127,19 @@ def drone_viz():
 				marker.header.stamp = t
 				marker.type = Marker.LINE_STRIP
 				marker.action = Marker.ADD
-				marker.scale = Vector3(0.05,0.05,0.05)
+				marker.scale = Vector3(0.01,0.01,0.01)
 				marker.color.b = 1
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
 			marker = trajectories[drone]
-			if len(marker.points) == 0 or marker.points[-1] != waypoints_dict[drone]:
-				# marker.points.append(waypoints_dict[drone])
-				pass
+			p = Point()
+			p.x = position_dict[drone].position.x
+			p.y = position_dict[drone].position.y - 0.04
+			p.z = position_dict[drone].position.z
+			marker.points.append(p)
+			marker.points = marker.points[-400:]
+
 			if BOX in drones and BOX in position_dict:
 				# draw rope
 				marker_name = "{}-{}".format(BOX, drone)
@@ -154,7 +159,7 @@ def drone_viz():
 					marker_array.markers.append(marker)
 				marker = markers[marker_name]
 				drone_pos = position_dict[drone]
-				drone_point = Point(drone_pos.position.x, drone_pos.position.y, drone_pos.position.z)
+				drone_point = Point(drone_pos.position.x, drone_pos.position.y, drone_pos.position.z - 0.01)
 				box_pos = position_dict[BOX]
 				box_point = Point(box_pos.position.x, box_pos.position.y, box_pos.position.z)
 				marker.points = [drone_point, box_point]

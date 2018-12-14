@@ -74,7 +74,7 @@ def sim():
 
 class Box:  
 
-	def __init__(self, rope_length=1, mass=0.01, dt = 0.1, x0=np.array([0, 0.5, 0]), v0=np.ones(3)):
+	def __init__(self, rope_length=1.5, mass=0.01, dt = 0.1, x0=np.array([0, 0.5, 0]), v0=np.ones(3)):
 		self.rope_length = rope_length				# length of "ropes" [m]
 		self.mass = mass							# mass of box [kg]
 		self.dt = dt 								# time step [s]
@@ -85,7 +85,7 @@ class Box:
 		self.global_time = 0 					    # global time
 		self.num_drones = 0 						# number of drones
 		self.k = 0.3 								# spring constant
-		self.c = 0.05 								# damping constant
+		self.c = 0.08 								# damping constant
 
 	def reset(self):
 		self.drone_positions = []
