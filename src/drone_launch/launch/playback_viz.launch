@@ -1,9 +1,13 @@
 <launch>
-	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
-	<node name="viz" pkg="drone_viz" type="drone.py" />
+	<!--<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
+	<node name="viz" pkg="drone_viz" type="drone.py" />-->
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
-	<node name="drone_1" pkg="drone_simulator" type="drone.py" output="screen">
-		<rosparam param="x0">[0,0,0,0,0,0,0,0,0,0,0,0]</rosparam>
-		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
+	<node name="drone_1" pkg="drone_viz" type="fake_node.py" output="screen">
+	</node>
+	<node name="drone_2" pkg="drone_viz" type="fake_node.py" output="screen">
+	</node>
+	<node name="drone_3" pkg="drone_viz" type="fake_node.py" output="screen">
+	</node>
+	<node name="box" pkg="drone_viz" type="fake_node.py" output="screen">
 	</node>
 </launch>
