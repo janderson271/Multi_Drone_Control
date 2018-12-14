@@ -29,10 +29,19 @@ drone3.u = np.array([0.1,0,0.1,0])
 print(drone3.x)
 drone3.sim_step()
 print(drone3.x[0:11].all() == 0 and drone3.x[11] > 0)
-ipdb.set_trace()
+#ipdb.set_trace()
 print(drone3.x)
 drone3.sim_step()
 print(drone3.x)
+
+
+# test 2
+drone4 = Drone()
+drone4.x = np.zeros((12,1))
+drone4.u = np.array([1,1,1,1])
+drone4.sim_step()
+print(drone4.x[0:1].all() == 0 and drone2.x[3:].all() == 0 and drone2.x[2] > 3 0)
+
 
 
 
