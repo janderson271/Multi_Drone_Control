@@ -46,18 +46,19 @@ def motion_planner():
 	for drone in drones:
 		drone.Xref = np.copy(nominal_traj)
 		if drone.name == "drone_2":
-			drone.Xref[0,:] += -1
-			drone.Xref[1,:] += 1
+			drone.Xref[0,:] += -0.1
+			drone.Xref[1,:] += 0.17
 		elif drone.name == "drone_3":
-			drone.Xref[0,:] += 1
-			drone.Xref[1,:] += 1
+			drone.Xref[0,:] += 0.1
+			drone.Xref[1,:] += 0.17
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
 
 	while not rospy.is_shutdown():
 		if timer.global_time >= timer.time:
 			timer.time += 1
+			all_close = sum(1 for drone in drones if np.linalg.norm(drone.xbar[:3] - drone.x[:3]) < drone.thresh) == num_drones
 			for drone in drones:
-				drone.pub_next_waypoint()
+				drone.pub_next_waypoint(all_close)
 
 class Timer:
 	def __init__(self):
@@ -79,16 +80,15 @@ class Tracker:
 		self.sub = rospy.Subscriber(name + "/position", Pose, self.state_callback)
 		self.Xref = np.zeros((12,1))
 		self.Xref[0:3] = np.ones((3,1))
+		self.xbar = self.Xref[:,0]
+		self.thresh = 0.1
 
-	def pub_next_waypoint(self):
-		xbar = self.Xref[:, self.max_reached]
-		curr_closeness = np.linalg.norm(xbar[:3] - self.x[:3])
-		thresh = 0.1
-		if curr_closeness < thresh and self.max_reached + 1 != self.Xref.shape[1]: 
+	def pub_next_waypoint(self, all_close):
+		if all_close and self.max_reached + 1 != self.Xref.shape[1]: 
 			self.max_reached += 1
-		xbar = self.Xref[:, self.max_reached]
+		self.xbar = self.Xref[:, self.max_reached]
 		msg = Float32MultiArray()
-		msg.data = xbar
+		msg.data = self.xbar
 		self.pub.publish(msg)
 
 	def state_callback(self, pos_msg):

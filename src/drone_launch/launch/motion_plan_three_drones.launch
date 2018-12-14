@@ -5,12 +5,12 @@
 	</node>
 	
 	<node name="drone_2" pkg="drone_simulator" type="drone.py">
-		<rosparam param="x0">[-1,1,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[-0.1,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
 
 	<node name="drone_3" pkg="drone_simulator" type="drone.py">
-		<rosparam param="x0">[1,1,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[0.1,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
 
@@ -18,8 +18,8 @@
 		<param name="drone" type="str" value="drone_1"/>
 		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
 		<rosparam param="ts">[0.1]</rosparam>
-		<rosparam param="P">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
-		<rosparam param="Q">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
+		<rosparam param="P">[1,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="Q">[1,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
 		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
@@ -42,8 +42,8 @@
 		<param name="drone" type="str" value="drone_3"/>
 		<rosparam param="u_init">[0.00, 0.000, 0.000, 0.000]</rosparam>
 		<rosparam param="ts">[0.1]</rosparam>
-		<rosparam param="P">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
-		<rosparam param="Q">[10,10,10,10,10,1,1,1,1,10,10,1]</rosparam>
+		<rosparam param="P">[1,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
+		<rosparam param="Q">[1,1,1,1,1,1,1,1,1,1,1,1]</rosparam>
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
 		<rosparam param="xbar">[1,1,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
@@ -55,7 +55,7 @@
 	<node name="viz" pkg="drone_viz" type="drone.py" />
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find drone_viz)/launch/rviz_conf.rviz" /> 
-	<!-- <node name="record_viz" pkg="rosbag" type="record" 
+	 <!--<node name="record_viz" pkg="rosbag" type="record" 
 		args="-O ./viz/ /viz/drone_markers"
 		if="$(arg record_viz)"
 		output="screen"
@@ -70,6 +70,8 @@
 	</node>
 
 	<node name="box" pkg="drone_simulator" type="box.py" output="screen">
+		<rosparam param="x0">[0,0.1,0]</rosparam>
+		<param name="num_drones" type="int" value="3"/>
 	</node>
 
 </launch>
