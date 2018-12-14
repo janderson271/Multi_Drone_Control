@@ -9,6 +9,7 @@ from std_msgs.msg import Float32MultiArray, Int32
 import matplotlib.pyplot as plt
 
 import MPClifter as MPC
+#import MPCcontroller as MPC
 
 def get_and_set_params(node_name, params):
 	# params is a dict from param_name -> default_value, None if no default value
@@ -49,7 +50,19 @@ def control():
 	
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
+			#print(node_name)
 			uOpt = droneController.calc_actuation()
+
+			print(node_name,uOpt)
+			
+			#print('x0 controller',droneController.controller.x0.value)
+			#print('x0 axtual', droneController.x)
+			#print('uOpt',droneController.controller.U[:,0].value)
+			#print('X col 0',droneController.controller.X[:,0].value)
+			#print('U col 0',droneController.controller.U[:,0].value)
+			#print('xbar',droneController.controller.xbar.value)
+			#print('ubar',droneController.controller.ubar.value)
+
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)
