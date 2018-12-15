@@ -99,9 +99,7 @@ class Box:
 		publishes external force acting on drone in world frame
 		returns box position in world frame
 		'''
-
-		self.time += 1
-		
+				
 		Fg = np.array([0, 0, -self.mass*9.81])
 		Fs = np.zeros(3)							
 

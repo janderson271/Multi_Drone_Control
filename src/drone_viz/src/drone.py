@@ -17,11 +17,13 @@ def drone_viz():
 	drones = []
 	position_dict = {}
 	waypoints_dict = {}
+	waypointsbox_dict = {}
 	pub_dict = {}
 	rate = rospy.Rate(10)
 	pub = rospy.Publisher("viz/drone_markers", MarkerArray, queue_size=1)
 	markers = {}
 	waypoints = {}
+	waypointsbox = {}
 	trajectories = {}
 	marker_array = MarkerArray()
 	global_id = 0
@@ -47,12 +49,39 @@ def drone_viz():
 				marker.type = Marker.CUBE
 				marker.action = Marker.ADD
 				marker.scale = Vector3(0.1,0.1,0.1)
-				marker.color.b = 0.5
+				marker.color.r = 0.4
+				marker.color.g = 1
+				marker.color.b = 0.4
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
 			marker = markers[BOX]
 			marker.pose = position_dict[BOX]
+
+			if BOX not in trajectories:
+				trajectories[BOX] = Marker()
+				marker = trajectories[BOX]
+				marker.header.frame_id = "world"
+				marker.id = global_id
+				global_id += 1
+				marker.header.stamp = t
+				marker.type = Marker.LINE_STRIP
+				marker.action = Marker.ADD
+				marker.scale = Vector3(0.01,0.01,0.01)
+				marker.color.r = 0.4
+				marker.color.g = 1
+				marker.color.b = 0.7
+				marker.color.a = 1.0
+				marker.lifetime = lifetime
+				marker_array.markers.append(marker)
+			marker = trajectories[BOX]
+			p = Point()
+			p.x = position_dict[BOX].position.x
+			p.y = position_dict[BOX].position.y
+			p.z = position_dict[BOX].position.z
+			marker.points.append(p)
+			# marker.points = marker.points[-400:]
+
 		for i, drone in enumerate(drones):
 			if drone == BOX: continue
 			if drone not in position_dict: continue
@@ -67,8 +96,10 @@ def drone_viz():
 				marker.mesh_resource = "package://drone_viz/src/drone.stl"
 				#marker.type = Marker.CYLINDER
 				#marker.action = Marker.ADD
-				marker.scale = Vector3(0.0006,0.0006,0.0006)
-				marker.color.g = 0.5
+				marker.scale = Vector3(0.001,0.001,0.001)
+				marker.color.r = 0.4
+				marker.color.g = 1
+				marker.color.b = 1
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
@@ -105,6 +136,8 @@ def drone_viz():
 				marker.action = Marker.ADD
 				marker.scale = Vector3(0.05,0.05,0.05)
 				marker.color.r = 1
+				marker.color.g = 0.4
+				marker.color.b = 0.4
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
 				marker_array.markers.append(marker)
@@ -128,6 +161,8 @@ def drone_viz():
 				marker.type = Marker.LINE_STRIP
 				marker.action = Marker.ADD
 				marker.scale = Vector3(0.01,0.01,0.01)
+				marker.color.r = 0.4
+				marker.color.g = 0.7
 				marker.color.b = 1
 				marker.color.a = 1.0
 				marker.lifetime = lifetime
@@ -138,7 +173,7 @@ def drone_viz():
 			p.y = position_dict[drone].position.y - 0.04
 			p.z = position_dict[drone].position.z
 			marker.points.append(p)
-			marker.points = marker.points[-400:]
+			# marker.points = marker.points[-400:]
 
 			if BOX in drones and BOX in position_dict:
 				# draw rope
@@ -152,8 +187,10 @@ def drone_viz():
 					marker.header.stamp = t
 					marker.type = Marker.LINE_STRIP
 					marker.action = Marker.ADD
-					marker.scale = Vector3(0.02,0.02,0.02)
+					marker.scale = Vector3(0.008,0.008,0.008)
 					marker.color.r = 1
+					marker.color.g = 0.7
+					marker.color.b = 0.4
 					marker.color.a = 1.0
 					marker.lifetime = lifetime
 					marker_array.markers.append(marker)

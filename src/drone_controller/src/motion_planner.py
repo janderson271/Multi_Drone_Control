@@ -35,41 +35,62 @@ def motion_planner():
 	timer = Timer()
 	time_sub = rospy.Subscriber("god/time", Int32, timer.timer_callback)
 
-	# 4 waypoints
-	nominal_traj = np.zeros((12,4))
+	# CORNERS OF A SQUARE
+	# # 4 waypoints
+	# nominal_traj = np.zeros((12,4))
 
-	# all at z = 2
-	nominal_traj[2,:] = 2.
+	# # all at z = 2
+	# nominal_traj[2,:] = 2.
+	# nominal_traj[2,2] = 3.
 	
-	# waypoint 1
+	# # waypoint 1
+	# nominal_traj[0,0] = 0.
+	# nominal_traj[1,0] = 0.
+
+	# # waypoint 2
+	# nominal_traj[0,1] = 2.
+	# nominal_traj[1,1] = 0.
+
+	# # waypoint 3
+	# nominal_traj[0,2] = 2.
+	# nominal_traj[1,2] = 2.
+
+
+	# # waypoint 4
+	# nominal_traj[0,3] = 0.
+	# nominal_traj[1,3] = 2.
+
+	nominal_traj = np.zeros((12,5))
+
+	nominal_traj[2,:] = 2.5
+
 	nominal_traj[0,0] = 0.
 	nominal_traj[1,0] = 0.
 
-	# waypoint 2
-	nominal_traj[0,1] = 2.
-	nominal_traj[1,1] = 0.
+	nominal_traj[0,1] = 1.06
+	nominal_traj[1,1] = 0.44
 
-	# waypoint 3
-	nominal_traj[0,2] = 2.
-	nominal_traj[1,2] = 2.
+	nominal_traj[0,2] = 1.5
+	nominal_traj[1,2] = 1.5
 
+	nominal_traj[0,3] = 1.94
+	nominal_traj[1,3] = 0.44
 
-	# waypoint 4
-	nominal_traj[0,2] = 0.
-	nominal_traj[1,2] = 2.
+	nominal_traj[0,4] = 0.
+	nominal_traj[1,4] = 3.
 
 	drones = set_pub_sub(num_drones)
 	for drone in drones:
 		drone.Xref = np.copy(nominal_traj)
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
-		for i in range(2):
-			# if (nominal_traj[1,i+1] - nominal_traj[1,i]) == 0:
-			# 	t = 0
-			# elif i == 0:
-			# 	t = 0
-			# else:
-			# 	t = np.arctan((nominal_traj[0,i+1] - nominal_traj[0,i])/(nominal_traj[1,i+1] - nominal_traj[1,i]))
-			t = 0
+		for i in range(len(nominal_traj[0])-1):
+			if i == 0:
+				t = 0
+			elif (nominal_traj[0,i+1] - nominal_traj[0,i]) == 0:
+				t = 0
+			else:
+				t = np.arctan((nominal_traj[1,i+1] - nominal_traj[1,i])/(nominal_traj[0,i+1] - nominal_traj[0,i]))
+			# t = 0
 			R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
 			xnew = R.dot(np.array([[drone.x0[0]], [drone.x0[1]]]))
 			drone.Xref[0,i] += xnew[0][0]
