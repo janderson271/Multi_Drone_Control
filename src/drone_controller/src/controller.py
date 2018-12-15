@@ -29,8 +29,6 @@ def control():
 
 	params_dict = dict(ts=None, P=None, Q=None, R=None, xbar=None, ubar=None, x0=None)
 	params = get_and_set_params(node_name, params_dict)
-	print('====================')
-	print(np.array(params['x0']))
 	droneController = DroneController(MPC.MPCcontroller(np.array(params['ts'])  ,\
 														np.array(params['P'])   ,\
 														np.array(params['Q'])   ,\
@@ -52,7 +50,6 @@ def control():
 	while not rospy.is_shutdown():
 		if droneController.time == droneController.global_time:
 			uOpt = droneController.calc_actuation()
-			print(node_name,uOpt)
 			if uOpt is not None:
 				control_input.data = uOpt
 				control_pub.publish(control_input)

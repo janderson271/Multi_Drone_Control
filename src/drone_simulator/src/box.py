@@ -2,7 +2,6 @@
 import numpy as np
 import rospy
 import rosnode
-import ipdb
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Pose, Wrench, Vector3, Twist
 
@@ -35,21 +34,12 @@ def sim():
 	params['x0'] = np.array(params['x0'], dtype=np.float64).flatten()
 	params['v0'] = np.array(params['v0'], dtype=np.float64).flatten()
 	
-	
-	print(np.array(params['x0'], dtype=np.float64).flatten())
 	node_names = rosnode.get_node_names()
 	drone_node_names = []
 
 	node_name = rospy.get_name()
 	num_drones = rospy.get_param(node_name + "/num_drones")
 
-	#box.num_drones = num_drones #sum(1 for i in node_names if i.startswith('/drone'))
-
-	# get drone positions
-	# node_names = ["/drone_{}".format(i+1) for i in range(num_drones)]
-	# drones = []
-	# for drone_node in node_names:
-		# if drone_node.startswith('/drone'):
 	drones = []
 	for i in range(1, num_drones + 1):
 		drone_node = "drone_" + str(i)
@@ -57,13 +47,12 @@ def sim():
 
 	box = Box(**params)
 	box.drones = drones
-	# get time
+
 	time_sub = rospy.Subscriber('god/time', Int32, box.timer_callback)
 	box_pos_pub = rospy.Publisher('box/position', Pose, queue_size=1)
-	# sim
 	rate = rospy.Rate(1/box.dt)
+
 	while not rospy.is_shutdown():
-		#import ipdb; ipdb.set_trace()
 		if box.global_time > box.time:
 			position = box.sim_step()
 			box_pos_pub.publish(position)
@@ -81,13 +70,9 @@ class PubObj:
 		self.vel = np.zeros(3)
 
 	def drone_callback(self, position_msg):
-		# if len(self.drone_positions) == self.num_drones:
-		# 	self.drone_positions = []
 		self.pos = self.vectornp(position_msg.position)
 
 	def drone_vel_callback(self, position_msg):
-		# if len(self.drone_velocities) == self.num_drones:
-		# 	self.drone_velocities = []
 		self.vel = self.vectornp(position_msg.linear)
 
 	def vectornp(self, msg): 
@@ -111,7 +96,7 @@ class Box:
 		self.global_time = 0 					    # global time
 		self.num_drones = 0 						# number of drones
 		self.k = 0.11								# spring constant
-		self.c = 0.0222 								# damping constant
+		self.c = 0.0222 							# damping constant
 		self.drones = []
 
 	def sim_step(self):
@@ -122,15 +107,11 @@ class Box:
 			where wrench_i.force.x = fext_x on drone_i, in drone_i frame
 		'''
 
-		# no drone positions
 		self.time += 1
 		
+		Fg = np.array([0, 0, -self.mass*9.81])
+		Fs = np.zeros(3)							
 
-		# forces on box
-		Fg = np.array([0, 0, -self.mass*9.81]) 	
-		Fs = np.zeros(3)
-		# "spring" forces
-		# for drone in self.drone_positions:
 		for drone in self.drones:
 			drone_pos = drone.pos
 			drone_vel = drone.vel
@@ -184,16 +165,6 @@ class Box:
 	def npvector(self, msg):
 		return Vector3(msg[0], msg[1], msg[2])
    
-	# def drone_callback(self, position_msg, drone_name):
-	# 	# if len(self.drone_positions) == self.num_drones:
-	# 	# 	self.drone_positions = []
-	# 	self.drone_positions[drone_name] = self.vectornp(position_msg.position)
-
-	# def drone_vel_callback(self, position_msg, drone_name):
-	# 	# if len(self.drone_velocities) == self.num_drones:
-	# 	# 	self.drone_velocities = []
-	# 	self.drone_velocities[drone_name] = self.vectornp(position_msg.linear)
-
 	def timer_callback(self, time_msg):
 		self.global_time = time_msg.data
 

@@ -41,7 +41,6 @@ def sim():
 		param = rospy.get_param("/{}/{}".format(node_name, "u_init"))
 		param = np.array(param).reshape((4, 1))
 		drone.u = param
-		print("setting initial u to ", drone.u)
 	
 	control_sub = rospy.Subscriber(node_name + "/control", Float32MultiArray, drone.control_callback)
 	control_sub = rospy.Subscriber(node_name + "/external_force", Wrench, drone.external_callback)
@@ -184,9 +183,6 @@ class Drone:
 		Rz = np.array([[np.cos(wz), -np.sin(wz), 0],[np.sin(wz),np.cos(wz), 0],[0,0,1]])
 		R = np.dot(Rx, np.dot(Ry,Rz))
 		return np.dot(R, vector)
-
-
-
 
 
 if __name__ == "__main__":
