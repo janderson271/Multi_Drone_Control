@@ -34,13 +34,29 @@ def motion_planner():
 
 	timer = Timer()
 	time_sub = rospy.Subscriber("god/time", Int32, timer.timer_callback)
-	nominal_traj = np.zeros((12,3))
-	nominal_traj[0,1] = 0.2
-	nominal_traj[0,2] = 0.4
 
-	nominal_traj[1,1] = 0.4
-	nominal_traj[1,2] = 0.4
-	nominal_traj[2,:] = 2
+	# 4 waypoints
+	nominal_traj = np.zeros((12,4))
+
+	# all at z = 2
+	nominal_traj[2,:] = 2.
+	
+	# waypoint 1
+	nominal_traj[0,0] = 0.
+	nominal_traj[1,0] = 0.
+
+	# waypoint 2
+	nominal_traj[0,1] = 2.
+	nominal_traj[1,1] = 0.
+
+	# waypoint 3
+	nominal_traj[0,2] = 2.
+	nominal_traj[1,2] = 2.
+
+
+	# waypoint 4
+	nominal_traj[0,2] = 0.
+	nominal_traj[1,2] = 2.
 
 	drones = set_pub_sub(num_drones)
 	for drone in drones:
