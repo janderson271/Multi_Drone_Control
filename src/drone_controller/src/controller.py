@@ -29,6 +29,8 @@ def control():
 
 	params_dict = dict(ts=None, P=None, Q=None, R=None, xbar=None, ubar=None, x0=None)
 	params = get_and_set_params(node_name, params_dict)
+	print('====================')
+	print(np.array(params['x0']))
 	droneController = DroneController(MPC.MPCcontroller(np.array(params['ts'])  ,\
 														np.array(params['P'])   ,\
 														np.array(params['Q'])   ,\

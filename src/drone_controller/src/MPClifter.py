@@ -32,7 +32,7 @@ class MPCcontroller():
 		g = 9.81
 
 		self.x0 = cvx.Parameter(12)
-		self.x0.value = np.zeros((12,1)).flatten()#x0_v.flatten()
+		self.x0.value = x0_v.flatten() #np.zeros((12,1)).flatten()#x0_v.flatten()
 
 		nx = 12
 		nu = 4
