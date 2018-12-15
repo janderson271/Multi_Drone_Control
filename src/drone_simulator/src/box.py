@@ -142,12 +142,12 @@ class Box:
 				W.force.z = 0
 			# drone supporting box
 			else:
-				# d = self.c * (np.linalg.norm(self.vel - drone_vel)) * (self.vel - drone_vel) / np.linalg.norm(self.vel - drone_vel)
+				d = -self.c * (np.linalg.norm(self.vel - drone_vel)) * (self.vel - drone_vel) / np.linalg.norm(self.vel - drone_vel)
 				f = -self.k * (np.linalg.norm(self.pos - drone_pos) - self.rope_length) * (self.pos - drone_pos) / np.linalg.norm(self.pos - drone_pos)
-				W.force.x = -f[0] #- d[0]
-				W.force.y = -f[1] #- d[1]
-				W.force.z = -f[2] #- d[2]
-				Fs += f #+ d
+				W.force.x = -f[0] - d[0]
+				W.force.y = -f[1] - d[1]
+				W.force.z = -f[2] - d[2]
+				Fs += f + d
 			drone.pub_force(W)	
 
 		# total force
