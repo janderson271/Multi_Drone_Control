@@ -1,9 +1,8 @@
 #!/usr/bin/env python
+import rospy
 import numpy as np
 import cvxpy as cvx
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
-
-import rospy
+from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import Pose, Twist, Wrench
 from std_msgs.msg import Float32MultiArray, Int32
 import matplotlib.pyplot as plt

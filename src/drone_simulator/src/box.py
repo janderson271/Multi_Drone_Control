@@ -33,9 +33,6 @@ def sim():
 	params = get_and_set_params(node_name, params_dict)
 	params['x0'] = np.array(params['x0'], dtype=np.float64).flatten()
 	params['v0'] = np.array(params['v0'], dtype=np.float64).flatten()
-	
-	node_names = rosnode.get_node_names()
-	drone_node_names = []
 
 	node_name = rospy.get_name()
 	num_drones = rospy.get_param(node_name + "/num_drones")
@@ -62,6 +59,7 @@ def sim():
 	clear_params(node_name, params_dict)
 
 class PubObj:
+
 	def __init__(self, drone_node): 
 		self.pos_sub = rospy.Subscriber(drone_node + '/position', Pose, self.drone_callback)
 		self.vel_sub = rospy.Subscriber(drone_node + '/velocity', Twist, self.drone_vel_callback)
@@ -77,9 +75,6 @@ class PubObj:
 
 	def vectornp(self, msg): 
 		return np.array([msg.x, msg.y, msg.z])
-
-	def npvector(self, msg):
-		return Vector3(msg[0], msg[1], msg[2])
 
 	def pub_force(self, W): 
 		self.pub.publish(W)
@@ -101,10 +96,8 @@ class Box:
 
 	def sim_step(self):
 		'''
-		self.drone_positions = [[drone_1], [drone_2], ... [drone_n]]
-			where drone_i = [i.x, i.y, i.z]
-		return [[wrench_1], [wrench_2], ... [wrench_n]]
-			where wrench_i.force.x = fext_x on drone_i, in drone_i frame
+		publishes external force acting on drone in world frame
+		returns box position in world frame
 		'''
 
 		self.time += 1
@@ -159,12 +152,6 @@ class Box:
 		pose.orientation.w = 1
 		return pose
 
-	def vectornp(self, msg): 
-		return np.array([msg.x, msg.y, msg.z])
-
-	def npvector(self, msg):
-		return Vector3(msg[0], msg[1], msg[2])
-   
 	def timer_callback(self, time_msg):
 		self.global_time = time_msg.data
 
