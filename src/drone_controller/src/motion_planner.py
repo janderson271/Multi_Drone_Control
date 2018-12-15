@@ -47,12 +47,13 @@ def motion_planner():
 		drone.Xref = np.copy(nominal_traj)
 		drone.x0 = rospy.get_param("{}/{}".format(drone.name, "x0"))
 		for i in range(2):
-			if (nominal_traj[1,i+1] - nominal_traj[1,i]) == 0:
-				t = 0
-			elif i == 0:
-				t = 0
-			else:
-				t = np.arctan((nominal_traj[0,i+1] - nominal_traj[0,i])/(nominal_traj[1,i+1] - nominal_traj[1,i]))
+			# if (nominal_traj[1,i+1] - nominal_traj[1,i]) == 0:
+			# 	t = 0
+			# elif i == 0:
+			# 	t = 0
+			# else:
+			# 	t = np.arctan((nominal_traj[0,i+1] - nominal_traj[0,i])/(nominal_traj[1,i+1] - nominal_traj[1,i]))
+			t = 0
 			R = np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
 			xnew = R.dot(np.array([[drone.x0[0]], [drone.x0[1]]]))
 			drone.Xref[0,i] += xnew[0][0]

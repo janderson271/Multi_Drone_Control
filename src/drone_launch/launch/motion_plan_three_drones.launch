@@ -1,16 +1,16 @@
 <launch>
 	<node name="drone_1" pkg="drone_simulator" type="drone.py" output="screen">
-		<rosparam param="x0">[0,0.2598,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[0,0.606,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
 	
 	<node name="drone_2" pkg="drone_simulator" type="drone.py">
-		<rosparam param="x0">[-0.15,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[-0.35,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
 
 	<node name="drone_3" pkg="drone_simulator" type="drone.py">
-		<rosparam param="x0">[0.15,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[0.35,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="u_init">[0.000, 0.000, 0.000, 0.000]</rosparam>
 	</node>
 
@@ -23,7 +23,7 @@
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
 		<rosparam param="xbar">[0,0,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
-		<rosparam param="x0">[0,0.17,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[0,0.606,0,0,0,0,0,0,0,0,0,0]</rosparam>
 	</node>
 	
 	<node pkg="drone_controller" type="controller.py" name="controller_2" output="screen">
@@ -35,7 +35,7 @@
 		<rosparam param="R">[1,1,1,1]</rosparam>
 		<rosparam param="xbar">[-1,1,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
-		<rosparam param="x0">[-0.15,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[-0.35,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 	</node>
 
 	<node pkg="drone_controller" type="controller.py" name="controller_3" output="screen">
@@ -47,7 +47,7 @@
 		<rosparam param="R">[0.1,0.1,0.1,0.1]</rosparam>
 		<rosparam param="xbar">[1,1,1,0,0,0,0,0,0,0,0,0]</rosparam>
 		<rosparam param="ubar">[0,0,0,0]</rosparam>
-		<rosparam param="x0">[0.15,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
+		<rosparam param="x0">[0.35,0.0,0,0,0,0,0,0,0,0,0,0]</rosparam>
 	</node>
 
 	<node name="tf_pub" pkg="drone_simulator" type="tf_pub.py" />
