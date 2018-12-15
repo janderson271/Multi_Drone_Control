@@ -28,9 +28,6 @@ class MPCcontroller():
 
 		self.x0 = cvx.Parameter(12)
 		self.x0.value = x0_v.flatten()
-		print('**************')
-		print(self.x0.value)
-		print(x0_v)
 
 		nx = 12
 		nu = 4
@@ -123,8 +120,6 @@ class MPCcontroller():
 		self.x0.value = x0.flatten()
 		#self.problem.solve()
 		self.problem.solve(solver=cvx.CVXOPT)
-		print('Final xOpt')
-		print(self.X.value[:,-1])
 		if self.problem.status == "optimal":
 			return self.U[:,0].value
 		else:
