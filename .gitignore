@@ -1,3 +1,4 @@
 devel
 *.swp
+*.pyc 
 build
